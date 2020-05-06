@@ -1,0 +1,158 @@
+- name: Configuration for newly created VMs
+  hosts: new_vms
+  vars_files:
+    - vars/external_vars.yml
+  become: yes
+  tasks:
+
+    - name: Checking which group is available - sudo or wheel
+      shell: |
+        if grep -q sudo /etc/group; then
+            echo "sudo"
+            exit 0
+        elif grep -q wheel /etc/group; then
+            echo "wheel"
+            exit 0
+        else
+            echo "Unknown admin group"
+            exit 1
+        fi
+      register: admingroup
+      changed_when: admingroup['stdout'] == "Unknown admin group"
+      failed_when: admingroup['rc'] > 0
+
+    - debug:
+       msg: "Available group: {{ admingroup['stdout'] }}"
+
+    - name: Allow {{ admingroup.stdout }} group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: "^%{{ admingroup.stdout }}"
+        line: "%{{ admingroup.stdout }} ALL=(ALL) NOPASSWD: ALL"
+        validate: "visudo -cf %s"
+
+    - name: Generate random string
+      shell: |
+        if ! [ -f "/tmp/{{ new_user }}_password_generated" ]; then
+            < /dev/urandom tr -dc A-Z-a-z-0-9 | head -c${1:-8} >> /tmp/password
+            touch /tmp/{{ new_user }}_password_generated
+            chown root:root /tmp/password
+            chmod 600 /tmp/password
+            echo "File created"
+        else
+            echo "File already exist"
+        fi
+      register: generaterandomstring
+      changed_when: generaterandomstring['stdout'] == "File created"
+
+    - name: Load password
+      slurp:
+        src: /tmp/password
+      register: password_from_file
+      changed_when: generaterandomstring['stdout'] == "File created"
+
+    - name: Create new user with username {{ new_user }}
+      user: 
+        name: "{{ new_user }}"
+        password: "{{ password_from_file.content | b64decode | password_hash('sha512') }}"
+        shell: /bin/bash
+        create_home: yes
+        groups: "{{ admingroup.stdout }}"
+        append: yes
+        update_password: on_create
+
+    - name: Add ssh key to user {{ new_user }}
+      authorized_key:
+        user: "{{ new_user }}"
+        state: present
+        key: "{{ new_user_pubkey }}"
+    
+    - name: Copy password file for {{ new_user }} to /home/{{ new_user }}
+      copy: 
+        src: /tmp/password 
+        dest: /home/{{ new_user }}/password
+        force: no
+        remote_src: yes
+    
+    - name: Change password file permissions
+      file:
+        path: /home/{{ new_user }}/password
+        owner: '{{ new_user }}'
+        group: '{{ new_user }}'
+        mode: '0600'
+    
+    - name: Remove firewalld if presented
+      package:
+        name:
+          - firewalld
+        state: absent
+
+    - name: Install necessary packages
+      package:
+        name:
+          - screen
+          - tar
+          - vim
+          - htop
+          - iputils-ping # Not available in Centos
+          - traceroute
+          - net-tools
+          - git
+          - curl
+          - wget
+          - bash-completion
+          - python3-pip
+          - python-setuptools
+          - ufw
+        state: latest  
+
+    - name: Install virtualenvwrapper for Python3
+      pip:
+        name: virtualenvwrapper
+        executable: pip3
+
+    - name: Clone git repo with custom tools
+      git:
+        repo: https://github.com/mrachuta/shell-scripts.git
+        dest: /tmp/shell-scripts
+        force: yes
+    
+    - name: Configure SSH daemon using custom tools
+      shell: |
+        chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh
+        /tmp/shell-scripts/ansible-tools/ssh-configurator.sh {{ new_user }} -r
+      args:
+        warn: no
+      register: sshconfig
+      failed_when: sshconfig['rc'] == 1
+
+    - name: Configure profile for {{ new_user }} using custom tools
+      shell: | 
+          chmod +x /tmp/shell-scripts/ansible-tools/profile-personalisator.sh
+          /tmp/shell-scripts/ansible-tools/profile-personalisator.sh {{ new_user }}
+      args:
+        warn: no
+
+    - name: Set deny policy on ufw
+      ufw:
+        state: enabled
+        policy: deny
+
+    - name: Delete OpenSSH rule on ufw
+      ufw:
+        rule: allow
+        name: OpenSSH
+        delete: yes
+
+    - name: Allow port for remote connection on ufw
+      ufw:
+        rule: allow
+        port: 28828
+        proto: tcp
+        comment: OpenSSH (moved to very high port)
+    
+    # TODO: Epel-release for Centos
+    # TODO: Specify SSH port (also in shell)
+    # TODO: Fix regex for sudo/wheel
+    
