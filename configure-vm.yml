@@ -1,7 +1,7 @@
 - name: Configuration for newly created VMs
   hosts: new_vms
   vars_files:
-    - vars/external_vars.yml
+    - vars/external-vars.yml
   become: yes
   tasks:
 
@@ -31,6 +31,7 @@
         regexp: "^%{{ admingroup.stdout }}"
         line: "%{{ admingroup.stdout }} ALL=(ALL) NOPASSWD: ALL"
         validate: "visudo -cf %s"
+        backup: yes
 
     - name: Generate random string
       shell: |
@@ -82,20 +83,25 @@
         group: '{{ new_user }}'
         mode: '0600'
     
-    - name: Remove firewalld if presented
+    - name: Remove firewalld if installed
       package:
         name:
           - firewalld
         state: absent
+    
+    - name: Add EPEL repo for CentOS
+      yum: 
+        name: epel-release 
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-    - name: Install necessary packages
+    - name: Install necessary packages (common)
       package:
         name:
           - screen
           - tar
           - vim
           - htop
-          - iputils-ping # Not available in Centos
           - traceroute
           - net-tools
           - git
@@ -103,9 +109,21 @@
           - wget
           - bash-completion
           - python3-pip
-          - python-setuptools
+          - python3-setuptools
           - ufw
-        state: latest  
+        state: latest
+
+    - name: Install necessary packages (specific - CentOS)
+      package:
+        name:
+          - iputils
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Install necessary packages (specific - other)
+      package:
+        name:
+          - iputils-ping
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
     - name: Install virtualenvwrapper for Python3
       pip:
@@ -117,15 +135,6 @@
         repo: https://github.com/mrachuta/shell-scripts.git
         dest: /tmp/shell-scripts
         force: yes
-    
-    - name: Configure SSH daemon using custom tools
-      shell: |
-        chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh
-        /tmp/shell-scripts/ansible-tools/ssh-configurator.sh {{ new_user }} -r
-      args:
-        warn: no
-      register: sshconfig
-      failed_when: sshconfig['rc'] == 1
 
     - name: Configure profile for {{ new_user }} using custom tools
       shell: | 
@@ -145,14 +154,20 @@
         name: OpenSSH
         delete: yes
 
-    - name: Allow port for remote connection on ufw
+    - name: Allow port {{ new_ssh_port }} for SSH on ufw
       ufw:
         rule: allow
-        port: 28828
+        port: '{{ new_ssh_port }}'
         proto: tcp
         comment: OpenSSH (moved to very high port)
-    
-    # TODO: Epel-release for Centos
-    # TODO: Specify SSH port (also in shell)
-    # TODO: Fix regex for sudo/wheel
+
+    # As last steop, to prevent problems with SSH connection (reconnect etc.)
+    - name: Configure SSH daemon using custom tools
+      shell: |
+        chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh
+        /tmp/shell-scripts/ansible-tools/ssh-configurator.sh {{ new_user }} {{ new_ssh_port }} -r
+      args:
+        warn: no
+      register: sshconfig
+      failed_when: sshconfig['rc'] == 1
     
