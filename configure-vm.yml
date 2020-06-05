@@ -85,11 +85,10 @@
     
     - name: Remove firewalld if installed
       package:
-        name:
-          - firewalld
+        name: firewalld
         state: absent
     
-    - name: Add EPEL repo for CentOS
+    - name: Add EPEL repo for CentOS/RHEL
       yum: 
         name: epel-release 
         state: present
@@ -113,16 +112,18 @@
           - ufw
         state: latest
 
-    - name: Install necessary packages (specific - CentOS)
+    - name: Install necessary packages (specific - CentOS/RHEL)
       package:
         name:
           - iputils
+          - lm_sensors
       when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-    - name: Install necessary packages (specific - other)
+    - name: Install necessary packages (specific - Ubuntu/Debian)
       package:
         name:
           - iputils-ping
+          - lm-sensors
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
     - name: Install virtualenvwrapper for Python3
@@ -143,12 +144,20 @@
       args:
         warn: no
 
-    - name: Set deny policy on ufw
+    - name: Set deny policy on ufw (incoming)
       ufw:
         state: enabled
         policy: deny
+        direction: incoming
+    
+    - name: Set allow policy on ufw (outgoing)
+      ufw:
+        state: enabled
+        policy: allow
+        direction: outgoing
+      
 
-    - name: Delete OpenSSH rule on ufw
+    - name: Delete OpenSSH standard-port rule on ufw
       ufw:
         rule: allow
         name: OpenSSH
@@ -159,9 +168,9 @@
         rule: allow
         port: '{{ new_ssh_port }}'
         proto: tcp
-        comment: OpenSSH (moved to very high port)
+        comment: OpenSSH (created by ansible playbook)
 
-    # As last steop, to prevent problems with SSH connection (reconnect etc.)
+    # Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
     - name: Configure SSH daemon using custom tools
       shell: |
         chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh
