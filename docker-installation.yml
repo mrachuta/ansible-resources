@@ -1,0 +1,105 @@
+- name: Docker installation & initial configuration
+  hosts: new_vms
+  vars_files:
+    - vars/external-vars.yml
+  become: yes
+  tasks:
+
+    - name: Add docker repository to package manager (specific - CentOS/RHEL)
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Add GPG key for docker repository (specific - Ubuntu/Debian)
+      apt_key:
+        url: https://download.docker.com/linux/{{ ansible_distribution|lower }}/gpg
+        state: present
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Add docker repository to package manager (specific - Ubuntu/Debian)
+      apt_repository:
+        repo: deb https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable
+        state: present
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    # Issue on CentOS 8, https://github.com/docker/for-linux/issues/873
+    - name: Initial installation of containerd.io (specific - CentOS/RHEL)
+      yum:
+        name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+    
+    - name: Install Docker and required packages
+      package:
+        name:
+          - docker-ce 
+          - docker-ce-cli 
+          - containerd.io
+        state: latest
+
+    - name: Install additional packages (specific - Ubuntu/Debian)
+      package:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        state: latest
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Add user {{ new_user }} to group docker
+      user:
+        name: '{{ new_user }}'
+        groups: docker
+        append: yes
+
+    - name: Install docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.26.2/docker-compose-linux-{{ ansible_architecture }}
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+    
+    - name: Add bash-completion for docker-compose
+      get_url:
+        url: https://raw.githubusercontent.com/docker/compose/1.26.2/contrib/completion/bash/docker-compose
+        dest: /etc/bash_completion.d/docker-compose
+
+    - name: Configure docker
+      copy:
+        dest: /etc/docker/daemon.json
+        force: no
+        content: |
+          {
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "10m",
+              "max-file": "10"
+            },
+            "live-restore": true,
+            "userland-proxy": false
+          }
+
+    - name: Enable service docker if not enabled
+      service:
+        name: docker
+        enabled: yes
+
+    - name: Reload service docker, to apply configuration
+      service:
+        name: docker
+        state: reloaded
+
+    - name: Verify Docker state
+      # Escape double curly braces
+      shell: |
+        if ! docker info --format '{{ '{{' }}json .ServerVersion{{ '}}' }}'
+        then
+          exit 1
+        else
+          exit 0
+        fi
+      register: docker_state
+      failed_when: docker_state.rc == 1
+      # Fake value to keep only failed or OK state
+      changed_when: docker_state.rc == 2

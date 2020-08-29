@@ -7,7 +7,8 @@
 
     - name: Checking which group is available - sudo or wheel
       shell: |
-        if grep -q sudo /etc/group; then
+        if grep -q sudo /etc/group
+        then
             echo "sudo"
             exit 0
         elif grep -q wheel /etc/group; then
@@ -18,11 +19,10 @@
             exit 1
         fi
       register: admingroup
-      changed_when: admingroup['stdout'] == "Unknown admin group"
-      failed_when: admingroup['rc'] > 0
+      changed_when: admingroup.rc == 1
 
     - debug:
-       msg: "Available group: {{ admingroup['stdout'] }}"
+       msg: "Available group: {{ admingroup.stdout }}"
 
     - name: Allow {{ admingroup.stdout }} group to have passwordless sudo
       lineinfile:
@@ -33,25 +33,38 @@
         validate: "visudo -cf %s"
         backup: yes
 
+    - name: Check if user already exist
+      # Return true when exist
+      command: grep {{ new_user }} -q /etc/passwd
+      register: user_exist
+      # Set as changed, if not exists
+      changed_when: user_exist.rc == 1
+      # Do not fail when rc == 1
+      failed_when: user_exist.rc == 2
+
     - name: Generate random string
       shell: |
-        if ! [ -f "/tmp/{{ new_user }}_password_generated" ]; then
+        if ! [ -f "/tmp/{{ new_user }}_password_generated" ]
+        then
             < /dev/urandom tr -dc A-Z-a-z-0-9 | head -c${1:-8} >> /tmp/password
             touch /tmp/{{ new_user }}_password_generated
             chown root:root /tmp/password
             chmod 600 /tmp/password
-            echo "File created"
+            exit 0
         else
-            echo "File already exist"
+            exit 1
         fi
       register: generaterandomstring
-      changed_when: generaterandomstring['stdout'] == "File created"
+      when: user_exist.rc == 1
+      changed_when: generaterandomstring.rc == 0
+      failed_when: generaterandomstring.rc == 2
 
     - name: Load password
       slurp:
         src: /tmp/password
       register: password_from_file
-      changed_when: generaterandomstring['stdout'] == "File created"
+      when: user_exist.rc == 1
+      changed_when: generaterandomstring.rc == 0
 
     - name: Create new user with username {{ new_user }}
       user: 
@@ -62,6 +75,7 @@
         groups: "{{ admingroup.stdout }}"
         append: yes
         update_password: on_create
+      when: user_exist.rc == 1
 
     - name: Add ssh key to user {{ new_user }}
       authorized_key:
@@ -75,6 +89,7 @@
         dest: /home/{{ new_user }}/password
         force: no
         remote_src: yes
+      when: user_exist.rc == 1
     
     - name: Change password file permissions
       file:
@@ -82,6 +97,7 @@
         owner: '{{ new_user }}'
         group: '{{ new_user }}'
         mode: '0600'
+      when: user_exist.rc == 1
     
     - name: Remove firewalld if installed
       package:
@@ -155,7 +171,6 @@
         state: enabled
         policy: allow
         direction: outgoing
-      
 
     - name: Delete OpenSSH standard-port rule on ufw
       ufw:
@@ -170,7 +185,7 @@
         proto: tcp
         comment: OpenSSH (created by ansible playbook)
 
-    # Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
+    #Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
     - name: Configure SSH daemon using custom tools
       shell: |
         chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh
@@ -178,5 +193,5 @@
       args:
         warn: no
       register: sshconfig
-      failed_when: sshconfig['rc'] == 1
+      failed_when: sshconfig.rc == 1
     
