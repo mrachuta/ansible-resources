@@ -7,6 +7,7 @@ Ansible playbooks written for my own purposes & training.
 - [Table of contents](#table-of-contents)
 - [General info](#general-info)
 - [configure-vm](#configure-vm)
+- [install-docker](#install-docker)
 
 ## General info
 
@@ -21,3 +22,11 @@ Playbook used for initial configuration of vm. It realizes following tasks:
 - personalisation of bash,
 - personalisation of ufw (firewall)
 
+## install-docker
+
+Playbook used for installing docker & docker compose with additional customizations:
+- adding docker repo,
+- installation of docker,
+- adding user to docker group,
+- installation of docker-compose,
+- configuration & start of service
