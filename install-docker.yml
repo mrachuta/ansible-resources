@@ -1,5 +1,5 @@
 - name: Docker installation & initial configuration
-  hosts: new_vms
+  hosts: homelab
   vars_files:
     - vars/external-vars.yml
   become: yes
@@ -65,7 +65,13 @@
         url: https://raw.githubusercontent.com/docker/compose/1.26.2/contrib/completion/bash/docker-compose
         dest: /etc/bash_completion.d/docker-compose
 
-    - name: Configure docker
+    - name: Configure docker - create dir
+      file:
+        path: /etc/docker
+        state: directory
+        mode: '0755'
+
+    - name: Configure docker - create config
       copy:
         dest: /etc/docker/daemon.json
         force: no

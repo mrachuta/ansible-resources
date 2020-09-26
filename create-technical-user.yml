@@ -1,0 +1,41 @@
+- name: Create new technical user
+  hosts: homelab
+  vars_files:
+    - vars/external-vars.yml
+  become: yes
+  tasks:
+
+    - name: Check if user already exist
+      # Return true when exist
+      command: grep {{ technical_user }} -q /etc/passwd
+      register: user_exist
+      # Set as changed, if not exists
+      changed_when: user_exist.rc == 1
+      # Do not fail when rc == 1
+      failed_when: user_exist.rc == 2
+
+    - name: Create new technical user {{ technical_user }}
+      user: 
+        name: "{{ technical_user }}"
+        # Do not create password, only key will allow to login
+        shell: /bin/bash
+        create_home: yes
+        append: yes
+      when: user_exist.rc == 1
+
+    - name: Allow {{ technical_user }} to have passwordless sudo
+      lineinfile:
+        path: /etc/sudoers.d/{{ technical_user }}
+        state: present
+        line: "# Created automatically by Ansible\n{{ technical_user }} ALL=(ALL) NOPASSWD: ALL"
+        validate: "visudo -cf %s"
+        create: yes
+      when: user_exist.rc == 1
+
+    - name: Add ssh key to user {{ technical_user }}
+      authorized_key:
+        user: "{{ technical_user }}"
+        state: present
+        key: "{{ technical_user_pubkey }}"
+    
+    
