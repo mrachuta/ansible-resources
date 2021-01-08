@@ -1,0 +1,21 @@
+- name: Update profile files
+  hosts: homelab
+  vars_files:
+    - vars/external-vars.yml
+  become: yes
+  tasks:
+
+    - name: Download shell script
+      get_url:
+        url: https://github.com/mrachuta/shell-scripts/raw/master/ansible-tools/profile-personalisator.sh
+        dest: /tmp/profile-personalisator.sh
+        mode: '0700'
+
+    - name: Configure profile for {{ new_user }} using custom tools
+      shell: | 
+          /tmp/profile-personalisator.sh {{ new_user }} --nocolormod
+    
+    - name: Cleanup
+      file:
+        state: absent
+        path: /tmp/profile-personalisator.sh

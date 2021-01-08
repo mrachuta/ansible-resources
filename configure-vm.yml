@@ -98,6 +98,30 @@
         group: '{{ new_user }}'
         mode: '0600'
       when: user_exist.rc == 1
+
+    # Sometimes yum/dnf won't work:
+    # Error: Failed to download metadata for repo 'BaseOS': repomd.xml parser error: 
+    # Parse error at line: 5 (Opening and ending tag mismatch: meta line 0 and head)
+    # Solutin: sudo rm -r /var/cache/dnf 
+
+    - name: Clean dnf/yum cache (specific - CentOS/RHEL)
+      file:
+        state: absent
+        path: /var/cache/dnf/
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Update package DB (specific - CentOS/RHEL)
+      yum: 
+        list: updates 
+        update_cache: yes 
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Update package DB (specific - Ubuntu/Debian)
+      apt: 
+        update_cache: yes 
+        force_apt_get: yes 
+        cache_valid_time: 3600
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
     
     - name: Remove firewalld if installed
       package:
@@ -109,7 +133,7 @@
         name: epel-release 
         state: present
       when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
+      
     - name: Install necessary packages (common)
       package:
         name:
@@ -126,6 +150,7 @@
           - python3-pip
           - python3-setuptools
           - ufw
+          - tmux
         state: latest
 
     - name: Install necessary packages (specific - CentOS/RHEL)
@@ -185,7 +210,18 @@
         proto: tcp
         comment: OpenSSH (created by ansible playbook)
 
-    #Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
+    # If you want to change the port on a SELinux-protected system, 
+    # you have to tell SELinux about this change.
+    # semanage port -a -t ssh_port_t -p tcp #PORTNUMBER
+    # https://www.tecmint.com/fix-semanage-command-not-found-in-centos-rhel/
+    # Here SELinux will be disabled completely
+
+    - name: Disable SELinux (specific - CentOS/RHEL)
+      ansible.posix.selinux:
+        state: disabled
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    # Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
     - name: Configure SSH daemon using custom tools
       shell: |
         chmod +x /tmp/shell-scripts/ansible-tools/ssh-configurator.sh

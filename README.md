@@ -8,6 +8,7 @@ Ansible playbooks written for my own purposes & training.
 - [General info](#general-info)
 - [configure-vm](#configure-vm)
 - [install-docker](#install-docker)
+- [create-technical-user](#create-technical-user)
 
 ## General info
 
@@ -30,3 +31,10 @@ Playbook used for installing docker & docker compose with additional customizati
 - adding user to docker group,
 - installation of docker-compose,
 - configuration & start of service
+
+## create-technical-user
+Playbook used for add new, technical user on remote server:
+- check if user already exists or not,
+- create if not exist,
+- allow paswordless sudo,
+- add public SSH key to allow logging-in.
