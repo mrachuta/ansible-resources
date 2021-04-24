@@ -1,5 +1,5 @@
 - name: Configuration for newly created VMs
-  hosts: new_vms
+  hosts: "{{ target_hosts }}"
   vars_files:
     - vars/external-vars.yml
   become: yes
@@ -29,7 +29,7 @@
         dest: /etc/sudoers
         state: present
         regexp: "^%{{ admingroup.stdout }}"
-        line: "%{{ admingroup.stdout }} ALL=(ALL) NOPASSWD: ALL"
+        line: "# Modified automatically by Ansible\n%{{ admingroup.stdout }} ALL=(ALL) NOPASSWD: ALL"
         validate: "visudo -cf %s"
         backup: yes
 

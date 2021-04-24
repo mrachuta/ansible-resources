@@ -1,5 +1,5 @@
 - name: Update profile files
-  hosts: homelab
+  hosts: {{ target_hosts }}
   vars_files:
     - vars/external-vars.yml
   become: yes

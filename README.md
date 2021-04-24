@@ -9,7 +9,10 @@ Ansible playbooks written for my own purposes & training.
 - [configure-vm](#configure-vm)
 - [install-docker](#install-docker)
 - [create-technical-user](#create-technical-user)
-
+- [update-profile](#update-profile)
+- [change-root-pass](#change-root-pass)
+- [create-nfs-share](#create-nfs-share)
+- [mount-nfs-share](#mount-nfs-share)
 ## General info
 
 Repo contains ansible playbooks used for automate tasks on virtual machines. Often they are supported by shell scritps.
@@ -38,3 +41,25 @@ Playbook used for add new, technical user on remote server:
 - create if not exist,
 - allow paswordless sudo,
 - add public SSH key to allow logging-in.
+
+## update-profile
+Playbok running script that will download latest version of profile configuration
+- download script,
+- run,
+- do cleanup
+
+## change-root-pass
+Playbook can be used to change root password in all servers to the same
+- just change password
+
+## create-nfs-share
+Playbook that creates a nfs-share
+- install necessary packages
+- create vg and lv from already attached pv
+- mount new volume an add entry to /etc/fstab
+- create exports
+
+## mount-nfs-share
+Playbook that mounts existing nfs-share
+- install necessary packages
+- mount nfs an add entry to /etc/fstab
