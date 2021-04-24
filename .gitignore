@@ -1,4 +1,3 @@
-my-inventory.yml
-first-playbook.yml
-ansible_commands
 vars/
+inventory/
+backup/
