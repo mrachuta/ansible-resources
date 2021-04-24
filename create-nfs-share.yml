@@ -1,0 +1,119 @@
+- name: Create NFS share
+  hosts: "{{ target_hosts }}"
+  vars_files:
+    - vars/external-vars.yml
+  become: yes
+  tasks:
+
+    - name: Clean dnf/yum cache (specific - CentOS/RHEL)
+      file:
+        state: absent
+        path: /var/cache/dnf/
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Update package DB (specific - CentOS/RHEL)
+      yum: 
+        list: updates 
+        update_cache: yes 
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Update package DB (specific - Ubuntu/Debian)
+      apt: 
+        update_cache: yes 
+        force_apt_get: yes 
+        cache_valid_time: 3600
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Install required packages - common
+      package:
+        name:
+          - lvm2
+        state: latest
+
+    - name: Install required packages (specific - CentOS/RHEL)
+      package:
+        name:
+          - nfs-utils
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Install required packages (specific - Ubuntu/Debian)
+      package:
+        name:
+          - nfs-kernel-server
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Enable services (specific - CentOS/RHEL)
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - rpcbind
+        - nfslock
+        - nfs
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Enable services (specific - Ubuntu/Debian)
+      service:
+        name: "{{ item }}"
+        enabled: yes
+      with_items:
+        - rpcbind
+        - nfs-kernel-server
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Create VG
+      lvg:
+        vg: nfsvg1
+        pvs: "{{ target_device }}"
+
+    - name: Create a logical volume
+      lvol:
+        vg: nfsvg1
+        lv: nfslv1
+        size: 100%FREE
+        shrink: no   
+
+    - name: Format partition
+      filesystem:
+        fstype: ext4
+        dev: /dev/mapper/nfsvg1-nfslv1
+
+    - name: Create mountpoint
+      file:
+        path: /exports/nfslv1
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0775'
+
+    - name: Mount device
+      mount:
+        path: /exports/nfslv1
+        src: /dev/mapper/nfsvg1-nfslv1
+        fstype: ext4
+        state: mounted
+
+    - name: Add entry to /etc/exports
+      lineinfile:
+        path: /etc/exports
+        state: present
+        line: "{{ item }}"
+      with_items:
+        - '/exports/nfslv1  192.168.0.*(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)'
+
+    - name: Restart service (specific - CentOS/RHEL)
+      service:
+        state: restarted
+        name: nfs.service
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+    - name: Restart service (specific - Ubuntu/Debian)
+      service:
+        state: restarted
+        name: nfs-kernel-server.service
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Re-export the shares
+      command: exportfs -rav
+    
+    
