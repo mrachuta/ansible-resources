@@ -1,3 +1,6 @@
 vars/
 inventory/
 backup/
+resources/
+downloads/
+priv/
