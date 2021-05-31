@@ -1,0 +1,32 @@
+- name: Provision node-exporter
+  hosts: "{{ target_hosts }}"
+  vars:
+    node_exporter_tls_server_config:
+      # https://devsres.com/marcelo/blog/prometheus-node-exporter-tls/
+      cert_file: /etc/node_exporter/prom_node_exp.crt
+      key_file: /etc/node_exporter/prom_node_exp_nopass.key
+      client_auth_type: "RequireAndVerifyClientCert"
+      client_ca_file: /etc/node_exporter/CertAuthority.crt
+    node_exporter_web_listen_address: ":{{ node_exporter_port }}"
+  vars_files:
+    - vars/external-vars.yml
+  become: yes
+  pre_tasks:
+
+    - name: Create node_exporter cert dir
+      file:
+        path: "/etc/node_exporter"
+        state: directory
+        owner: root
+        group: root
+
+    - name: Copy certs
+      copy:
+        src: resources/node_exporter/
+        dest: /etc/node_exporter/
+        owner: root
+        group: root
+        mode: 700
+
+  roles:
+    - cloudalchemy.node_exporter

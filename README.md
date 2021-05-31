@@ -13,6 +13,7 @@ Ansible playbooks written for my own purposes & training.
 - [change-root-pass](#change-root-pass)
 - [create-nfs-share](#create-nfs-share)
 - [mount-nfs-share](#mount-nfs-share)
+- [provision-node-exporter](#provision-node-exporter)
 ## General info
 
 Repo contains ansible playbooks used for automate tasks on virtual machines. Often they are supported by shell scritps.
@@ -63,3 +64,8 @@ Playbook that creates a nfs-share
 Playbook that mounts existing nfs-share
 - install necessary packages
 - mount nfs an add entry to /etc/fstab
+
+## provision-node-exporter
+Playbook that creates a service node-exporter to provide metrics
+- basing on external role
+- customizations added (TLS)
