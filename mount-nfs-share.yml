@@ -61,7 +61,7 @@
         state: directory
         owner: nobody
         group: nogroup
-        mode: '0775'
+        mode: '0777'
 
     - name: Mount an NFS volume
       mount:

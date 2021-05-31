@@ -82,9 +82,6 @@
       file:
         path: /exports/nfslv1
         state: directory
-        owner: nobody
-        group: nogroup
-        mode: '0777'
 
     - name: Mount device
       mount:
@@ -99,7 +96,16 @@
         state: present
         line: "{{ item }}"
       with_items:
-        - '/exports/nfslv1  192.168.0.*(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)'
+        - '/exports/nfslv1  192.168.0.0/24(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)'
+    
+    # Issues with owner 777 after mount fixed by re-set
+    - name: Re-set permissions on mountpoint
+      file:
+        path: /exports/nfslv1
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0777'
 
     - name: Restart service (specific - CentOS/RHEL)
       service:
@@ -115,5 +121,3 @@
 
     - name: Re-export the shares
       command: exportfs -rav
-    
-    

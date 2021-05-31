@@ -151,6 +151,7 @@
           - python3-setuptools
           - ufw
           - tmux
+          - lsof
         state: latest
 
     - name: Install necessary packages (specific - CentOS/RHEL)
@@ -230,4 +231,10 @@
         warn: no
       register: sshconfig
       failed_when: sshconfig.rc == 1
-    
+
+    - name: Download file with pass
+      ansible.builtin.fetch:
+        src: /home/{{ new_user }}/password
+        dest: downloads/{{ new_user }}_{{ ansible_hostname }}_password
+        flat: yes
+      when: user_exist.rc == 1
