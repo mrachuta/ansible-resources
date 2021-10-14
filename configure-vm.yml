@@ -5,6 +5,11 @@
   become: yes
   tasks:
 
+    - name: Install sudo if not available
+      package:
+        name: sudo
+        state: latest
+
     - name: Checking which group is available - sudo or wheel
       shell: |
         if grep -q sudo /etc/group
@@ -104,17 +109,23 @@
     # Parse error at line: 5 (Opening and ending tag mismatch: meta line 0 and head)
     # Solutin: sudo rm -r /var/cache/dnf 
 
-    - name: Clean dnf/yum cache (specific - CentOS/RHEL)
+    - name: Clean dnf/yum cache (specific - CentOS/RHEL/OracleLinux)
       file:
         state: absent
         path: /var/cache/dnf/
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      when: > 
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'OracleLinux'
 
-    - name: Update package DB (specific - CentOS/RHEL)
+    - name: Update package DB (specific - CentOS/RHEL/OracleLinux)
       yum: 
         list: updates 
         update_cache: yes 
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      when: > 
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'OracleLinux'
 
     - name: Update package DB (specific - Ubuntu/Debian)
       apt: 
@@ -133,6 +144,8 @@
         name: epel-release 
         state: present
       when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+      #TODO: add step to enable epel-repo on OracleLinux
       
     - name: Install necessary packages (common)
       package:
@@ -154,12 +167,15 @@
           - lsof
         state: latest
 
-    - name: Install necessary packages (specific - CentOS/RHEL)
+    - name: Install necessary packages (specific - CentOS/RHEL/OracleLinux)
       package:
         name:
           - iputils
           - lm_sensors
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      when: > 
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'OracleLinux'
 
     - name: Install necessary packages (specific - Ubuntu/Debian)
       package:
@@ -217,10 +233,13 @@
     # https://www.tecmint.com/fix-semanage-command-not-found-in-centos-rhel/
     # Here SELinux will be disabled completely
 
-    - name: Disable SELinux (specific - CentOS/RHEL)
+    - name: Disable SELinux (specific - CentOS/RHEL/OracleLinux)
       ansible.posix.selinux:
         state: disabled
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      when: > 
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'OracleLinux'
 
     # Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
     - name: Configure SSH daemon using custom tools
@@ -231,6 +250,12 @@
         warn: no
       register: sshconfig
       failed_when: sshconfig.rc == 1
+
+    - name: Start and enable ufw
+      service:
+        name: ufw
+        state: started
+        enabled: yes
 
     - name: Download file with pass
       ansible.builtin.fetch:
