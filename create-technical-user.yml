@@ -5,6 +5,25 @@
   become: yes
   tasks:
 
+    - name: Checking which group is available - sudo or wheel
+      shell: |
+        if grep -q sudo /etc/group
+        then
+            echo "sudo"
+            exit 0
+        elif grep -q wheel /etc/group; then
+            echo "wheel"
+            exit 0
+        else
+            echo "Unknown admin group"
+            exit 1
+        fi
+      register: admingroup
+      changed_when: admingroup.rc == 1
+
+    - debug:
+       msg: "Available group: {{ admingroup.stdout }}"
+
     - name: Create new technical user {{ technical_user }}
       user: 
         name: "{{ technical_user }}"
@@ -12,7 +31,7 @@
         shell: /bin/bash
         create_home: yes
         append: yes
-        groups: sudo
+        groups: "{{ admingroup.stdout }}"
 
     - name: Test if /etc/sudoers.d/{{ technical_user }} exists
       stat:

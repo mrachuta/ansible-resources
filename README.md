@@ -13,6 +13,7 @@ Ansible playbooks written for my own purposes & training.
 - [change-root-pass](#change-root-pass)
 - [create-nfs-share](#create-nfs-share)
 - [mount-nfs-share](#mount-nfs-share)
+- [install-openvpn-server](#install-openvpn-server)
 - [provision-node-exporter](#provision-node-exporter)
 ## General info
 
@@ -65,6 +66,11 @@ Playbook that mounts existing nfs-share
 - install necessary packages
 - mount nfs an add entry to /etc/fstab
 
+## install-openvpn-server
+Playbok that setup Openvpn server
+- install service via shell script
+- create initial user and download certificate
+ 
 ## provision-node-exporter
 Playbook that creates a service node-exporter to provide metrics
 - basing on external role
