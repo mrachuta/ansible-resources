@@ -5,6 +5,13 @@
   become: yes
   tasks:
 
+    # Set var ocpubuntu=true during configuration of Ubuntu VM in
+    # Oracle Cloud (issues with ufw and iptables)
+    - name: Detect if ocpubuntu variable is set
+      debug: 
+        msg: "ocpubuntu variable set"
+      when: ocpubuntu is defined
+
     - name: Install sudo if not available
       package:
         name: sudo
@@ -107,7 +114,28 @@
     # Sometimes yum/dnf won't work:
     # Error: Failed to download metadata for repo 'BaseOS': repomd.xml parser error: 
     # Parse error at line: 5 (Opening and ending tag mismatch: meta line 0 and head)
-    # Solutin: sudo rm -r /var/cache/dnf 
+    # Solutin: sudo rm -r /var/cache/dnf
+
+    - name: Add EPEL repo for CentOS/RHEL
+      yum: 
+        name: epel-release 
+        state: present
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+
+    - name: Add EPEL repo for CentOS/RHEL
+      yum: 
+        name: epel-release 
+        state: present
+      when: >
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'RedHat' 
+
+    - name: Enable EPEL repo for OracleLinux
+      lineinfile:
+        path: "/etc/yum.repos.d/oracle-epel-ol{{ ansible_distribution_major_version }}.repo"
+        regexp: '^enabled=0$'
+        line: enabled=1
+      when: ansible_distribution == 'OracleLinux'
 
     - name: Clean dnf/yum cache (specific - CentOS/RHEL/OracleLinux)
       file:
@@ -115,7 +143,7 @@
         path: /var/cache/dnf/
       when: > 
             ansible_distribution == 'CentOS' or 
-            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'RedHat' or
             ansible_distribution == 'OracleLinux'
 
     - name: Update package DB (specific - CentOS/RHEL/OracleLinux)
@@ -124,7 +152,7 @@
         update_cache: yes 
       when: > 
             ansible_distribution == 'CentOS' or 
-            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'RedHat' or
             ansible_distribution == 'OracleLinux'
 
     - name: Update package DB (specific - Ubuntu/Debian)
@@ -138,15 +166,7 @@
       package:
         name: firewalld
         state: absent
-    
-    - name: Add EPEL repo for CentOS/RHEL
-      yum: 
-        name: epel-release 
-        state: present
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-      #TODO: add step to enable epel-repo on OracleLinux
-      
     - name: Install necessary packages (common)
       package:
         name:
@@ -172,9 +192,10 @@
         name:
           - iputils
           - lm_sensors
+          - cronie
       when: > 
             ansible_distribution == 'CentOS' or 
-            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'RedHat' or
             ansible_distribution == 'OracleLinux'
 
     - name: Install necessary packages (specific - Ubuntu/Debian)
@@ -182,6 +203,7 @@
         name:
           - iputils-ping
           - lm-sensors
+          - cron
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
     - name: Install virtualenvwrapper for Python3
@@ -207,18 +229,21 @@
         state: enabled
         policy: deny
         direction: incoming
-    
+      when: ocpubuntu is not defined
+
     - name: Set allow policy on ufw (outgoing)
       ufw:
         state: enabled
         policy: allow
         direction: outgoing
+      when: ocpubuntu is not defined
 
     - name: Delete OpenSSH standard-port rule on ufw
       ufw:
         rule: allow
         name: OpenSSH
         delete: yes
+      when: ocpubuntu is not defined
 
     - name: Allow port {{ new_ssh_port }} for SSH on ufw
       ufw:
@@ -226,6 +251,7 @@
         port: '{{ new_ssh_port }}'
         proto: tcp
         comment: OpenSSH (created by ansible playbook)
+      when: ocpubuntu is not defined 
 
     # If you want to change the port on a SELinux-protected system, 
     # you have to tell SELinux about this change.
@@ -235,10 +261,11 @@
 
     - name: Disable SELinux (specific - CentOS/RHEL/OracleLinux)
       ansible.posix.selinux:
-        state: disabled
+        policy: targeted
+        state: permissive
       when: > 
             ansible_distribution == 'CentOS' or 
-            ansible_distribution == 'Red Hat Enterprise Linux' or
+            ansible_distribution == 'RedHat' or
             ansible_distribution == 'OracleLinux'
 
     # Performed as last step, to prevent issues with SSH connection (in case of reconnect etc.)
@@ -256,10 +283,31 @@
         name: ufw
         state: started
         enabled: yes
+      when: ocpubuntu is not defined
+
+    - name: Override iptables rules with clean template
+      copy:
+        src: resources/opc/rules-empty.v4
+        dest: /etc/iptables/rules.v4
+        owner: root
+        group: root
+        mode: '0644'
+      when: ocpubuntu is defined
+
+    - name: Reload iptables rules
+      shell: iptables-restore < /etc/iptables/rules.v4
+      when: ocpubuntu is defined
+
+    - name: Check if password file already downloaded
+      delegate_to: localhost
+      become: no
+      stat:
+        path: downloads/{{ new_user }}_{{ ansible_hostname }}_password
+      register: pass_file  
 
     - name: Download file with pass
       ansible.builtin.fetch:
         src: /home/{{ new_user }}/password
         dest: downloads/{{ new_user }}_{{ ansible_hostname }}_password
         flat: yes
-      when: user_exist.rc == 1
+      when: not pass_file.stat.exists
