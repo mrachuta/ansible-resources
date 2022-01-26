@@ -1,15 +1,18 @@
 - name: Docker installation & initial configuration
-  hosts: {{ target_hosts }}
+  hosts: "{{ target_hosts }}"
   vars_files:
     - vars/external-vars.yml
   become: yes
   tasks:
 
-    - name: Add docker repository to package manager (specific - CentOS/RHEL)
+    - name: Add docker repository to package manager (specific - CentOS/RHEL/OracleLinux)
       get_url:
         url: https://download.docker.com/linux/centos/docker-ce.repo
         dest: /etc/yum.repos.d/docker-ce.repo
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+      when: > 
+            ansible_distribution == 'CentOS' or 
+            ansible_distribution == 'RedHat' or
+            ansible_distribution == 'OracleLinux'
 
     - name: Add GPG key for docker repository (specific - Ubuntu/Debian)
       apt_key:
@@ -22,12 +25,6 @@
         repo: deb https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable
         state: present
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
-
-    # Issue on CentOS 8, https://github.com/docker/for-linux/issues/873
-    - name: Initial installation of containerd.io (specific - CentOS/RHEL)
-      yum:
-        name: https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
-      when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
     
     - name: Install Docker and required packages
       package:
@@ -56,13 +53,13 @@
 
     - name: Install docker-compose
       get_url:
-        url: https://github.com/docker/compose/releases/download/1.27.4/docker-compose-linux-{{ ansible_architecture }}
+        url: https://github.com/docker/compose/releases/download/{{ compose_version }}/docker-compose-linux-{{ ansible_architecture }}
         dest: /usr/local/bin/docker-compose
         mode: '0755'
     
     - name: Add bash-completion for docker-compose
       get_url:
-        url: https://raw.githubusercontent.com/docker/compose/1.27.4/contrib/completion/bash/docker-compose
+        url: https://raw.githubusercontent.com/docker/compose/{{ compose_version }}/contrib/completion/bash/docker-compose
         dest: /etc/bash_completion.d/docker-compose
 
     - name: Configure docker - create dir
