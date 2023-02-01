@@ -1,0 +1,85 @@
+---
+- name: "[02.01] Get existing users"
+  ansible.builtin.getent:
+    database: passwd
+
+- name: "[02.02] Get existing groups"
+  ansible.builtin.getent:
+    database: group
+
+- name: "[02.03] Generate password for user"
+  ansible.builtin.set_fact:
+    generated_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+  when: default_user not in getent_passwd.keys()
+
+- name: "[02.04] Remove root password"
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+  when: remove_root_password | bool
+
+- name: "Create new user"
+  block:
+
+    # Create user and allow to alter params
+    - name: "[02.05] Create new user"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        state: present
+        shell: /bin/bash
+
+    - name: "[02.06] Add user to sudo"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        group: sudo
+        state: present
+      when: add_default_user_to_sudo | bool and 'sudo' in getent_group.keys()
+
+    - name: "[02.06] Add user to wheel"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        group: wheel
+        state: present
+      when: add_default_user_to_sudo | bool and 'wheel' in getent_group.keys()
+
+    # Do not change password if user already exist
+    - name: "[02.07] Alter password"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        password: "{{ generated_password | password_hash('sha512') }}"
+      when: "default_user not in getent_passwd.keys()"
+
+- name: "[02.08] Set authorized key for new user"
+  ansible.posix.authorized_key:
+    user: "{{ default_user }}"
+    state: present
+    key: "{{ lookup('file', ssh_key_path) }}"
+
+- name: "[02.09] Check if password to new user saved locally"
+  delegate_to: localhost
+  become: false
+  ansible.builtin.stat:
+    path: "{{ password_download_path }}"
+  register: password_file
+  when: "default_user not in getent_passwd.keys()"
+
+- name: Download file with password to local machine
+  when: "default_user not in getent_passwd.keys() and not password_file.stat.exists"
+
+  block:
+    - name: "[02.10] Save password to file"
+      ansible.builtin.copy:
+        content: "{{ generated_password }}"
+        dest: "/tmp/{{ default_user }}_password"
+        mode: "0600"
+
+    - name: "[02.11] Download file with password to local machine"
+      ansible.builtin.fetch:
+        src: /tmp/{{ default_user }}_password
+        dest: "{{ password_download_path }}"
+        flat: true
+  always:
+    - name: "[02.12] Remove file with password"
+      ansible.builtin.file:
+        path: "/tmp/{{ default_user }}_password"
+        state: absent

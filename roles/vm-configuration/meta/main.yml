@@ -1,0 +1,24 @@
+galaxy_info:
+  author: "Mateusz Rachuta"
+  description: "Role to configure new VMs"
+  company: ""
+
+  license: "Apache-2.0"
+
+  min_ansible_version: "2.11"
+
+  platforms:
+  - name: "OracleLinux"
+    versions:
+      - "8.7"
+  - name: "Ubuntu"
+    versions:
+      - "jammy"
+      - "focal"
+  - name: "Debian"
+    versions:
+      - "bullseye"
+
+  galaxy_tags: []
+
+dependencies: []

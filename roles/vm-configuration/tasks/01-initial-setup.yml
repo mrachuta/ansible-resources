@@ -1,0 +1,100 @@
+---
+- name: "Enable EPEL repo"
+  when: ansible_os_family == 'RedHat'
+  block:
+
+    - name: "[01.01] Enable EPEL repo - CentOS/RHEL"
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+      # Alias for fact
+      when: ((ansible_distribution == 'CentOS') or (ansible_distribution == 'RedHat'))
+
+    - name: "[01.02] Enable EPEL repo - OracleLinux"
+      ansible.builtin.lineinfile:
+        # Alias for fact
+        path: "/etc/yum.repos.d/oracle-epel-ol{{ ansible_distribution_major_version }}.repo"
+        regexp: '^enabled=0$'
+        line: enabled=1
+      when: ansible_distribution == 'OracleLinux'
+
+- name: "Add external repos"
+  block:
+
+    - name: "[01.03] Add external repos - create key dir"
+      ansible.builtin.file:
+        path: "/etc/apt/keyrings"
+        state: directory
+        mode: '0755'
+      when: ansible_os_family == 'Debian'
+
+    - name: "[01.04] Add external repos - add repo key"
+      ansible.builtin.get_url:
+        url: "{{ item.apt_gpg_url }}"
+        dest: "/etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }}"
+        mode: '0755'
+      loop: "{{ repo_list }}"
+      when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
+
+    - name: "[01.05] Add external repos - de-armor key"
+      ansible.builtin.shell: >
+        /usr/bin/gpg --dearmor <
+        /etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }} >
+        /etc/apt/keyrings/{{ item.name }}.gpg
+      args:
+        creates: "/etc/apt/keyrings/{{ item.name }}.{{ apt_gpg_key_extension }}"
+      loop: "{{ repo_list }}"
+      when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
+
+    - name: "[01.06] Add external repos - add apt repo"
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ architecture_map[ansible_architecture] }} signed-by=/etc/apt/keyrings/{{ item.name }}.gpg] {{ item.apt_repo_url }}"
+        state: present
+        filename: "{{ item.name }}"
+      loop: "{{ repo_list }}"
+      when: ansible_os_family == 'Debian' and item.apt_repo_url | length > 0
+
+    - name: "[01.07] Add external repos - add yum repo"
+      ansible.builtin.yum_repository:
+        name: "{{ item.name }}"
+        file: "{{ item.name }}"
+        baseurl: "{{ item.yum_repo_url }}"
+        gpgcheck: true
+        enabled: true
+        gpgkey: "{{ item.yum_gpg_url }}"
+      loop: "{{ repo_list }}"
+      when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
+
+    - name: "[01.08] Add external repos - remove armored keys"
+      ansible.builtin.file:
+        path: /etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }}
+        state: absent
+      loop: "{{ repo_list }}"
+      when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
+
+- name: "[01.09] Install required packages"
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  # Ignore errors for OS-specific packages
+  ignore_errors: true
+  loop: "{{ packages_to_install }}"
+
+- name: "[01.10] Install virtualenvwrapper"
+  ansible.builtin.pip:
+    name: "virtualenvwrapper"
+
+- name: "Ensure 'python3' command"
+  block:
+
+    - name: "[01.11] Check if /usr/bin/python3 exists"
+      ansible.builtin.stat:
+        path: "/usr/bin/python3"
+      register: python3_command
+
+    - name: "[01.12] Create symlink if 'python3' command not exists"
+      ansible.builtin.file:
+        src: "/usr/bin/python3.{{ ansible_facts.python.version.micro }}"
+        dest: "/usr/bin/python3"
+        state: link
+      when: not python3_command.stat.exists

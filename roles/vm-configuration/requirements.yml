@@ -1,0 +1,4 @@
+# Required external resources to run role
+collections:
+  - name: "community.general"
+  - name: "ansible.posix"

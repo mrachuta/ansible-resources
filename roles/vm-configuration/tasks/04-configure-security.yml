@@ -1,0 +1,67 @@
+---
+- name: "[04.01] Set passwordless sudo"
+  ansible.builtin.template:
+    src: "templates/passwordless_sudo.j2"
+    dest: "/etc/sudoers.d/passwordless_sudo"
+    validate: "/usr/sbin/visudo -cf %s"
+    mode: "0600"
+  when: passwordless_sudo | bool
+
+- name: "[04.02] Set permissive mode on SELinux"
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  # Alias for fact
+  when: "set_selinux_permissive | bool and ansible_os_family == 'RedHat'"
+
+- name: "[04.03] Enable ufw"
+  ansible.builtin.systemd:
+    name: ufw
+    state: started
+    enabled: true
+    masked: false
+  # Alias for fact
+  when: "not disable_system_firewall | bool and ansible_os_family == 'Debian'"
+
+- name: "[04.04] Set deny policy on ufw (incoming)"
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+  when: not disable_system_firewall | bool
+
+- name: "[04.05] Set allow policy on ufw (outgoing)"
+  community.general.ufw:
+    state: enabled
+    policy: allow
+    direction: outgoing
+  when: not disable_system_firewall | bool
+
+- name: "[04.06] Add ufw rules"
+  community.general.ufw:
+    comment: "{{ item.comment }}"
+    direction: "{{ item.direction }}"
+    from_ip: "{{ item.from_ip }}"
+    proto: "{{ item.proto }}"
+    rule: "{{ item.rule }}"
+    to_port: "{{ item.to_port }}"
+  loop: "{{ ufw_rules }}"
+  when: not disable_system_firewall | bool
+
+- name: "[04.07] Disable ufw"
+  ansible.builtin.systemd:
+    name: ufw
+    state: stopped
+    masked: true
+    enabled: false
+  # Alias for fact
+  when: "disable_system_firewall | bool and ansible_os_family == 'Debian'"
+
+- name: "[04.08] Disable firewalld"
+  ansible.builtin.systemd:
+    name: firewalld
+    state: stopped
+    masked: true
+    enabled: false
+  # Alias for fact
+  when: "disable_system_firewall | bool and ansible_os_family == 'RedHat'"
