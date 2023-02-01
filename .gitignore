@@ -1,7 +1,10 @@
-vars/
-inventory/
-backup/
-resources/
-downloads/
-priv/
-kubespray/
+/vars
+/inventory
+/backup
+/resources
+/*downloads
+/priv
+/kubespray
+/new
+/new_vars
+*/*.pub
