@@ -12,7 +12,7 @@
     policy: targeted
     state: permissive
   # Alias for fact
-  when: "set_selinux_permissive | bool and ansible_os_family == 'RedHat'"
+  when: set_selinux_permissive | bool and ansible_os_family == 'RedHat'
 
 - name: "[04.03] Enable ufw"
   ansible.builtin.systemd:
@@ -21,7 +21,7 @@
     enabled: true
     masked: false
   # Alias for fact
-  when: "not disable_system_firewall | bool and ansible_os_family == 'Debian'"
+  when: not disable_system_firewall | bool and ansible_os_family == 'Debian'
 
 - name: "[04.04] Set deny policy on ufw (incoming)"
   community.general.ufw:
@@ -55,7 +55,7 @@
     masked: true
     enabled: false
   # Alias for fact
-  when: "disable_system_firewall | bool and ansible_os_family == 'Debian'"
+  when: disable_system_firewall | bool and ansible_os_family == 'Debian'
 
 - name: "[04.08] Disable firewalld"
   ansible.builtin.systemd:
@@ -64,4 +64,8 @@
     masked: true
     enabled: false
   # Alias for fact
-  when: "disable_system_firewall | bool and ansible_os_family == 'RedHat'"
+  when: disable_system_firewall | bool and ansible_os_family == 'RedHat'
+
+- name: "[04.09] Disable iptables"
+  ansible.builtin.shell: iptables -F && netfilter-persistent save
+  when: disable_oci_firewall | bool and ansible_os_family == 'Debian'

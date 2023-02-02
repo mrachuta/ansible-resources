@@ -7,12 +7,10 @@
       ansible.builtin.dnf:
         name: epel-release
         state: present
-      # Alias for fact
-      when: ((ansible_distribution == 'CentOS') or (ansible_distribution == 'RedHat'))
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
     - name: "[01.02] Enable EPEL repo - OracleLinux"
       ansible.builtin.lineinfile:
-        # Alias for fact
         path: "/etc/yum.repos.d/oracle-epel-ol{{ ansible_distribution_major_version }}.repo"
         regexp: '^enabled=0$'
         line: enabled=1
@@ -20,7 +18,6 @@
 
 - name: "Add external repos"
   block:
-
     - name: "[01.03] Add external repos - create key dir"
       ansible.builtin.file:
         path: "/etc/apt/keyrings"
@@ -31,18 +28,18 @@
     - name: "[01.04] Add external repos - add repo key"
       ansible.builtin.get_url:
         url: "{{ item.apt_gpg_url }}"
-        dest: "/etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }}"
-        mode: '0755'
+        dest: "/etc/apt/keyrings/{{ item.name }}.{{ apt_gpg_key_extension }}_armored"
+        mode: '0644'
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
 
     - name: "[01.05] Add external repos - de-armor key"
       ansible.builtin.shell: >
         /usr/bin/gpg --dearmor <
-        /etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }} >
+        /etc/apt/keyrings/{{ item.name }}.{{ apt_gpg_key_extension }}_armored >
         /etc/apt/keyrings/{{ item.name }}.gpg
       args:
-        creates: "/etc/apt/keyrings/{{ item.name }}.{{ apt_gpg_key_extension }}"
+        creates: "/etc/apt/keyrings/{{ item.name }}.gpg"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
 
@@ -65,13 +62,6 @@
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
 
-    - name: "[01.08] Add external repos - remove armored keys"
-      ansible.builtin.file:
-        path: /etc/apt/keyrings/armored-{{ item.name }}.{{ apt_gpg_key_extension }}
-        state: absent
-      loop: "{{ repo_list }}"
-      when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
-
 - name: "[01.09] Install required packages"
   ansible.builtin.package:
     name: "{{ item }}"
@@ -86,7 +76,6 @@
 
 - name: "Ensure 'python3' command"
   block:
-
     - name: "[01.11] Check if /usr/bin/python3 exists"
       ansible.builtin.stat:
         path: "/usr/bin/python3"

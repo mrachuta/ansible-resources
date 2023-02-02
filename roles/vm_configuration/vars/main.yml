@@ -1,4 +1,8 @@
 ---
+create_default_user: true
+
+create_technical_user: true
+
 apt_gpg_key_extension: "{{ item.apt_gpg_url | basename | split('.') | last | default('gpg') }}"
 
 architecture_map:
@@ -45,6 +49,8 @@ packages_to_install:
   - "software-properties-common"
   # podman
   - podman
+  # kubectl
+  - kubectl
 
 repo_list:
   - name: "kubernetes"

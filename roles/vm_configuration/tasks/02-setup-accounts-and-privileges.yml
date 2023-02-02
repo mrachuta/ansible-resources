@@ -1,0 +1,116 @@
+---
+- name: "[02.01] Get existing users"
+  ansible.builtin.getent:
+    database: passwd
+
+- name: "[02.02] Get existing groups"
+  ansible.builtin.getent:
+    database: group
+
+- name: "[02.03] Remove root password"
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+  when: remove_root_password | bool
+
+- name: "[02.04] Generate password for default user"
+  ansible.builtin.set_fact:
+    generated_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+  when: create_default_user | bool and default_user not in getent_passwd.keys()
+
+- name: "Create technical user and reconfigure it"
+  when: create_technical_user | bool
+  block:
+    - name: "[02.05] Create technical user"
+      ansible.builtin.user:
+        name: "{{ technical_user }}"
+        shell: /bin/bash
+        state: present
+
+    - name: "[02.06] Add technical user to sudo"
+      ansible.builtin.user:
+        name: "{{ technical_user }}"
+        groups: sudo
+        state: present
+      when: "'sudo' in getent_group.keys()"
+
+    - name: "[02.07] Add technical user to wheel"
+      ansible.builtin.user:
+        name: "{{ technical_user }}"
+        groups: wheel
+        state: present
+      when: "'wheel' in getent_group.keys()"
+
+    - name: "[02.08] Set authorized key for technical user"
+      ansible.posix.authorized_key:
+        user: "{{ technical_user }}"
+        state: present
+        key: "{{ lookup('file', technical_user_ssh_key_path) }}"
+      when: technical_user_ssh_key_path | length > 0
+
+- name: "Create default user and reconfigure it"
+  when: create_default_user | bool
+  block:
+    # Create user and allow to alter params
+    - name: "[02.09] Create default user"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        state: present
+        shell: /bin/bash
+
+    - name: "[02.10] Add default user to sudo"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        groups: sudo
+        state: present
+      when: add_default_user_to_sudo | bool and 'sudo' in getent_group.keys()
+
+    - name: "[02.11] Add default user to wheel"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        groups: wheel
+        state: present
+      when: add_default_user_to_sudo | bool and 'wheel' in getent_group.keys()
+
+    # Do not change password if user already exist
+    - name: "[02.12] Alter default user password"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        password: "{{ generated_password | password_hash('sha512') }}"
+      when: default_user not in getent_passwd.keys()
+
+    - name: "[02.13] Set authorized key for default user"
+      ansible.posix.authorized_key:
+        user: "{{ default_user }}"
+        state: present
+        key: "{{ lookup('file', default_user_ssh_key_path) }}"
+      when: default_user_ssh_key_path | length > 0
+
+- name: "[02.14] Check if password to default user saved locally"
+  delegate_to: localhost
+  become: false
+  ansible.builtin.stat:
+    path: "{{ default_user_password_download_path }}"
+  register: password_file
+  when: create_default_user | bool and default_user not in getent_passwd.keys()
+
+- name: Download file with password to local machine
+  when: create_default_user | bool and default_user not in getent_passwd.keys() and not password_file.stat.exists
+
+  block:
+    - name: "[02.15] Save password to file"
+      ansible.builtin.copy:
+        content: "{{ generated_password }}"
+        dest: "/tmp/{{ default_user }}_password"
+        mode: "0600"
+
+    - name: "[02.16] Download file with password to local machine"
+      ansible.builtin.fetch:
+        src: /tmp/{{ default_user }}_password
+        dest: "{{ default_user_password_download_path }}"
+        flat: true
+  always:
+    - name: "[02.17] Remove file with password"
+      ansible.builtin.file:
+        path: "/tmp/{{ default_user }}_password"
+        state: absent
