@@ -62,7 +62,7 @@
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
 
-- name: "[01.09] Install required packages"
+- name: "[01.08] Install required packages"
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
@@ -70,18 +70,18 @@
   ignore_errors: true
   loop: "{{ packages_to_install }}"
 
-- name: "[01.10] Install virtualenvwrapper"
+- name: "[01.09] Install virtualenvwrapper"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
 
 - name: "Ensure 'python3' command"
   block:
-    - name: "[01.11] Check if /usr/bin/python3 exists"
+    - name: "[01.10] Check if /usr/bin/python3 exists"
       ansible.builtin.stat:
         path: "/usr/bin/python3"
       register: python3_command
 
-    - name: "[01.12] Create symlink if 'python3' command not exists"
+    - name: "[01.11] Create symlink if 'python3' command not exists"
       ansible.builtin.file:
         src: "/usr/bin/python3.{{ ansible_facts.python.version.micro }}"
         dest: "/usr/bin/python3"
