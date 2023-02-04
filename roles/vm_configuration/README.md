@@ -1,17 +1,14 @@
-vm_configuration role
-=========
+# vm_configuration role
 
 Role to install software, configure accounts and privileges and some security aspects.
 
-Requirements
-------------
+## Requirements
 
 If you want to allow remote access via SSH using keys, generate them before launching of the role.
 
-Role Variables
---------------
+## Role Variables
 
-Required variables:
+### Required variables:
 
 `remove_root_password`
 
@@ -78,12 +75,11 @@ Type: boolean
 
 Description: Disable system firewall on Oracle Cloud instance (Ubuntu) 
 
-Optional variables:
+### Optional variables:
 
 see *vars/main.yml* file.
 
-Dependencies
-------------
+## Dependencies
 
 `remote_user` should be able to perfom commands with root privileges.
 
@@ -92,8 +88,7 @@ Role requires following collections to be installed before launching the role:
   - *ansible.posix*
   - *devsec.hardening*
 
-Example Playbook
-----------------
+## Example Playbook
 
 ```
 - name: "Run role"
@@ -103,7 +98,6 @@ Example Playbook
       - role: vm_configuration
 ```
 
-License
--------
+## License
 
 Apache-2.0
