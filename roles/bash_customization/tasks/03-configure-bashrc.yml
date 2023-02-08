@@ -1,0 +1,15 @@
+---
+- name: "[03.01] Generate color for machine name"
+  ansible.builtin.shell: "echo $(( RANDOM % 229 ))"
+  args:
+    executable: /bin/bash
+  register: machine_color
+  changed_when: false
+
+- name: "[03.02] Copy bashrc file"
+  ansible.builtin.template:
+    src: "templates/bashrc.j2"
+    dest: "/home/{{ default_user }}/.bashrc"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0640"

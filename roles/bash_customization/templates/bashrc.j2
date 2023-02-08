@@ -1,0 +1,136 @@
+#
+# {{ ansible_managed }}
+#
+
+# .bashrc
+
+# If not running interactively, don't do anything
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# User specific environment
+PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+export PATH
+
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# set history format
+export HISTTIMEFORMAT='%Y-%m-%d %T '
+
+# ignore some history entries
+export HISTIGNORE='cd*:history'
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=10000
+HISTFILESIZE=10000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# Setting for virtualenvwrapper
+# For CentOS
+# HINT: can link pythonX to python: sudo ln -s /usr/bin/python3 /usr/bin/python
+# export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3.6
+# For Other OS
+export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
+export WORKON_HOME=~/python_envs
+# If installed with --user
+# source /home/$USER/.local/bin/virtualenvwrapper.sh
+# If installed globally
+source /usr/local/bin/virtualenvwrapper.sh
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# Activate bash-completion
+if [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+fi
+
+# Custom bash prompt
+# Colors definition
+D_DEFAULT_COLOR="\e[39m"
+D_INTERMEDIATE_COLOR="\e[37m"
+D_USER_COLOR="\e[36m"
+# 256 colors
+D_MACHINE_COLOR="\e[30;48;5;{{ machine_color.stdout }}m"
+# 256 colors
+D_DIR_COLOR="\e[38;5;202m"
+D_GIT_COLOR="\e[90m"
+D_CMDFAIL_COLOR="\e[41m"
+D_PYENV_COLOR="\e[32m"
+# 256 colors
+# Not useful when use Tmux
+D_SCREEN_COLOR="\e[38;5;13m"
+D_AT_COLOR="\e[1;93m"
+D_RESET_ALL="\e[0m"
+
+# Func to gen PS1 after CMDs
+# Tmux mod https://unix.stackexchange.com/a/1292
+PROMPT_COMMAND="__prompt_command; history -a; history -c; history -r"
+
+__prompt_command() {
+
+  local code="$?"
+  PS1=""
+  if [ $code != 0 ];
+  then
+    LAST_EXIT_STATUS="${D_INTERMEDIATE_COLOR}exited \
+${D_CMDFAIL_COLOR}$code${D_RESET_ALL}${D_DEFAULT_COLOR}"
+  else
+    LAST_EXIT_STATUS=""
+  fi
+
+  if [ $VIRTUAL_ENV ];
+  then
+    PY_VENV=" |venv|$(basename $VIRTUAL_ENV)|\
+$($VIRTUAL_ENV/bin/python --version)|"
+  else
+    PY_VENV=""
+  fi
+  
+  # Source: https://stackoverflow.com/a/35218509/9342492
+  if [[ $(git branch 2> /dev/null) ]];
+  then
+    GIT_BRANCH=" |git|$(git branch 2> /dev/null |\
+sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')|"
+  else
+    GIT_BRANCH=""
+  fi
+
+  PS1="${TITLEBAR}\
+${D_USER_COLOR}\u\
+${D_AT_COLOR} at ${D_RESET_ALL}${D_MACHINE_COLOR}\h\
+${D_RESET_ALL}${D_SCREEN_COLOR}${STY#[0-9]*.}\
+${D_RESET_ALL}${D_PYENV_COLOR}${PY_VENV}${D_RESET_ALL}\
+ in ${D_DIR_COLOR}\w${D_RESET_ALL}${D_GIT_COLOR}\
+${GIT_BRANCH} ${LAST_EXIT_STATUS}${D_RESET_ALL}
+$ "
+
+}

@@ -1,0 +1,32 @@
+---
+default_theme_raw: "https://github.com/tomasr/molokai/raw/master/colors/molokai.vim"
+
+pathogen_url: "https://tpo.pe/pathogen.vim"
+
+vim_repos:
+  - url: "https://github.com/luochen1990/rainbow.git"
+    branch: "master"
+  - url: "https://github.com/martinda/jenkinsfile-vim-syntax.git"
+    branch: "master"
+  - url: "https://github.com/ekalinin/dockerfile.vim.git"
+    branch: "master"
+  - url: "https://github.com/python-mode/python-mode.git"
+    branch: "develop"
+  - url: "https://github.com/scrooloose/nerdcommenter.git"
+    branch: "master"
+  - url: "https://github.com/itchyny/lightline.vim.git"
+    branch: "master"
+  - url: "https://github.com/pangloss/vim-javascript.git"
+    branch: "master"
+  - url: "https://github.com/chr4/nginx.vim.git"
+    branch: "master"
+  - url: "https://github.com/Yggdroot/indentLine.git"
+    branch: "master"
+
+packages_to_install:
+  - "vim"
+  - "tmux"
+  - "git"
+  - "python3"
+  - "python3-pip"
+  - "python3-setuptools"

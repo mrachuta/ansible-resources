@@ -1,0 +1,8 @@
+---
+- name: "[02.01] Copy bash_aliases file"
+  ansible.builtin.template:
+    src: "templates/bash_aliases.j2"
+    dest: "/home/{{ default_user }}/.bash_aliases"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0640"

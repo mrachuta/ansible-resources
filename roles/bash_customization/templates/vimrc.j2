@@ -1,0 +1,53 @@
+"
+" {{ ansible_managed }}
+"
+
+execute pathogen#infect()
+syntax on
+filetype plugin indent on
+
+" Set color scheme
+" https://github.com/fmoralesc/molokayo
+" In case of problems with colours, uncomment
+" set t_Co=256
+" Set scheme to molokai
+colorscheme molokai
+
+" New leader key
+let mapleader=","
+set timeout timeoutlen=1500
+
+" Global indent; due to syntax plugin for
+" example python has their own indent-style
+" insert two spaces on tab
+set tabstop=2
+" when indenting with '>', use 2 spaces width
+set shiftwidth=2
+" press tab to insert space
+set expandtab
+" for command mode
+nnoremap <S-Tab> <<
+" for insert mode
+inoremap <S-Tab> <C-d>
+
+" Map :set paste/nopaste to key
+" https://stackoverflow.com/a/2514520/9342492
+set pastetoggle=<F3>
+
+" https://github.com/luochen1990/rainbow
+let g:rainbow_active = 1
+
+" https://github.com/martinda/Jenkinsfile-vim-syntax
+" https://github.com/ekalinin/Dockerfile.vim
+
+" https://github.com/vim-python/python-syntax
+let python_highlight_all = 1
+
+" https://github.com/preservim/nerdcommenter
+
+" https://github.com/itchyny/lightline.vim
+set laststatus=2
+set noshowmode
+
+" https://github.com/pangloss/vim-javascript
+" https://github.com/chr4/nginx.vim
