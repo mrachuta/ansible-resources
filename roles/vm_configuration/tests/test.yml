@@ -1,8 +1,6 @@
 ---
 - name: "Run tests"
   hosts: localhost
-  remote_user: root
-  vars:
-    check_mode: true
+  become: true
   roles:
-    - vm_configuration
+    - ../../vm_configuration

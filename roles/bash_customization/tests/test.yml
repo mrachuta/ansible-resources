@@ -1,6 +1,6 @@
 ---
 - name: "Run tests"
   hosts: localhost
-  remote_user: root
+  become: true
   roles:
-    - bash_customization
+    - ../../bash_customization
