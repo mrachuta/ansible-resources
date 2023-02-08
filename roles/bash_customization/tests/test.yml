@@ -1,6 +1,8 @@
 ---
 - name: "Run tests"
   hosts: localhost
+  # Force linear strategy to make playbook more stable
+  strategy: linear
   become: true
   roles:
     - ../../bash_customization
