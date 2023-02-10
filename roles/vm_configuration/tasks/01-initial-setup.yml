@@ -54,6 +54,7 @@
     - name: "[01.07] Add external repos - add yum repo"
       ansible.builtin.yum_repository:
         name: "{{ item.name }}"
+        description: "{{ item.name }} repository"
         file: "{{ item.name }}"
         baseurl: "{{ item.yum_repo_url }}"
         gpgcheck: true

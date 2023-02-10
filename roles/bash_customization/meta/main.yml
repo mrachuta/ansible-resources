@@ -18,6 +18,9 @@ galaxy_info:
     - name: "Debian"
       versions:
         - "bullseye"
+    - name: "EL"
+      versions:
+        - "8"
 
   galaxy_tags: []
 
