@@ -112,11 +112,10 @@
 
     - name: "[02.17] Restrict access to password file on local machine"
       delegate_to: localhost
-      become: false
       ansible.builtin.file:
         path: "{{ default_user_password_download_path }}"
-        owner: "{{ ansible_user_id }}"
-        group: "{{ ansible_user_id }}"
+        owner: "root"
+        group: "root"
         mode: '0600'
   
   always:
