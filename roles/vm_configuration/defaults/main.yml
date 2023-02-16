@@ -9,7 +9,7 @@ default_user: "testuser"
 
 default_user_ssh_key_path: "files/testuser_at_example_com.pub"
 
-default_user_password_download_path: "../ansible_downloads/{{ default_user }}_{{ ansible_hostname }}_password"
+default_user_password_download_path: "/tmp/{{ default_user }}_{{ ansible_hostname }}_password"
 
 add_default_user_to_sudo: true
 

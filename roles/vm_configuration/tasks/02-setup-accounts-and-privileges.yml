@@ -109,8 +109,18 @@
         src: /tmp/{{ default_user }}_password
         dest: "{{ default_user_password_download_path }}"
         flat: true
+
+    - name: "[02.17] Restrict access to password file on local machine"
+      delegate_to: localhost
+      become: false
+      ansible.builtin.file:
+        path: "{{ default_user_password_download_path }}"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
+        mode: '0600'
+  
   always:
-    - name: "[02.17] Remove file with password"
+    - name: "[02.18] Remove file with password"
       ansible.builtin.file:
         path: "/tmp/{{ default_user }}_password"
         state: absent
