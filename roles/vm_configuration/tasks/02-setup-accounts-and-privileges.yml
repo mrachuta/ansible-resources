@@ -117,7 +117,7 @@
         owner: "root"
         group: "root"
         mode: '0600'
-  
+
   always:
     - name: "[02.18] Remove file with password"
       ansible.builtin.file:
