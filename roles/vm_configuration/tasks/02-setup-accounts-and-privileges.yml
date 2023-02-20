@@ -63,14 +63,14 @@
         name: "{{ default_user }}"
         groups: sudo
         state: present
-      when: add_default_user_to_sudo | bool and 'sudo' in getent_group.keys()
+      when: "(add_default_user_to_sudo | bool) and ('sudo' in getent_group.keys())"
 
     - name: "[02.11] Add default user to wheel"
       ansible.builtin.user:
         name: "{{ default_user }}"
         groups: wheel
         state: present
-      when: add_default_user_to_sudo | bool and 'wheel' in getent_group.keys()
+      when: "(add_default_user_to_sudo | bool) and ('wheel' in getent_group.keys())"
 
     # Do not change password if user already exist
     - name: "[02.12] Alter default user password"

@@ -33,7 +33,7 @@
     enabled: true
     masked: false
   # Alias for fact
-  when: not disable_system_firewall | bool and ansible_os_family == 'Debian' and services is defined and 'ufw' in services
+  when: "(not disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
 
 - name: "[04.05] Set deny policy on ufw (incoming)"
   community.general.ufw:
@@ -67,7 +67,7 @@
     masked: true
     enabled: false
   # Alias for fact
-  when: disable_system_firewall | bool and ansible_os_family == 'Debian' and services is defined and 'ufw' in services
+  when: "(disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
 
 - name: "[04.09] Disable firewalld"
   ansible.builtin.systemd:
@@ -76,7 +76,7 @@
     masked: true
     enabled: false
   # Alias for fact
-  when: disable_system_firewall | bool and ansible_os_family == 'RedHat' and services is defined and 'firewalld' in services
+  when: "(disable_system_firewall | bool) and (services is defined) and ('firewalld.service' in services)"
 
 - name: "[04.10] Disable iptables"
   ansible.builtin.shell: iptables -F && netfilter-persistent save
