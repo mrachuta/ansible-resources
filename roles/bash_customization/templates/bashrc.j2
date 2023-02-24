@@ -79,7 +79,7 @@ D_DEFAULT_COLOR="\e[39m"
 D_INTERMEDIATE_COLOR="\e[37m"
 D_USER_COLOR="\e[36m"
 # 256 colors
-D_MACHINE_COLOR="\e[30;48;5;{{ machine_color.stdout }}m"
+D_MACHINE_COLOR="\e[30;48;5;{% if 'bash_hostname_color' is defined and bash_hostname_color|length > 0 %}{{ bash_hostname_color }}{% else %}{{ machine_color.stdout }}{% endif %}m"
 # 256 colors
 D_DIR_COLOR="\e[38;5;202m"
 D_GIT_COLOR="\e[90m"

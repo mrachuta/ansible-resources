@@ -10,7 +10,7 @@ It's recommended to do this for example via role *vm_configuration*.
 
 ## Role Variables
 
-### Required variables:
+### User-provided variables:
 
 `default_user`
 
@@ -24,9 +24,15 @@ Type: string
 
 Description: name of user to modify bash and other tools
 
-### Optional variables:
+`bash_hostname_color`
 
-see *vars/main.yml* file.
+Type: string
+
+Description: color from bash 256color table to use as background for hostname in prompt
+
+### Other variables:
+
+* see *vars/main.yml* file.
 
 ## Dependencies
 
