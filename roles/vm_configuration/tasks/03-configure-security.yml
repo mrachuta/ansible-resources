@@ -1,8 +1,8 @@
 ---
-- name: "[04.01] Populate service facts"
+- name: "[03.01] Populate service facts"
   ansible.builtin.service_facts:
 
-- name: "[04.02] Set passwordless sudo"
+- name: "[03.02] Set passwordless sudo"
   ansible.builtin.template:
     src: "templates/passwordless_sudo.j2"
     dest: "/etc/sudoers.d/passwordless_sudo"
@@ -10,7 +10,7 @@
     mode: "0600"
   when: passwordless_sudo | bool
 
-- name: "[04.03] Set permissive mode on SELinux"
+- name: "[03.03] Set permissive mode on SELinux"
   # Used shell to avoid isues with missing python's libselinux module
   ansible.builtin.shell:
     cmd: |
@@ -26,7 +26,7 @@
   # Alias for fact
   when: set_selinux_permissive | bool and ansible_os_family == 'RedHat'
 
-- name: "[04.04] Enable ufw"
+- name: "[03.04] Enable ufw"
   ansible.builtin.systemd:
     name: ufw
     state: started
@@ -35,21 +35,21 @@
   # Alias for fact
   when: "(not disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
 
-- name: "[04.05] Set deny policy on ufw (incoming)"
+- name: "[03.05] Set deny policy on ufw (incoming)"
   community.general.ufw:
     state: enabled
     policy: deny
     direction: incoming
   when: not disable_system_firewall | bool
 
-- name: "[04.06] Set allow policy on ufw (outgoing)"
+- name: "[03.06] Set allow policy on ufw (outgoing)"
   community.general.ufw:
     state: enabled
     policy: allow
     direction: outgoing
   when: not disable_system_firewall | bool
 
-- name: "[04.07] Add ufw rules"
+- name: "[03.07] Add ufw rules"
   community.general.ufw:
     comment: "{{ item.comment }}"
     direction: "{{ item.direction }}"
@@ -60,7 +60,7 @@
   loop: "{{ ufw_rules }}"
   when: not disable_system_firewall | bool
 
-- name: "[04.08] Disable ufw"
+- name: "[03.08] Disable ufw"
   ansible.builtin.systemd:
     name: ufw
     state: stopped
@@ -69,7 +69,7 @@
   # Alias for fact
   when: "(disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
 
-- name: "[04.09] Disable firewalld"
+- name: "[03.09] Disable firewalld"
   ansible.builtin.systemd:
     name: firewalld
     state: stopped
@@ -78,6 +78,6 @@
   # Alias for fact
   when: "(disable_system_firewall | bool) and (services is defined) and ('firewalld.service' in services)"
 
-- name: "[04.10] Disable iptables"
+- name: "[03.10] Disable iptables"
   ansible.builtin.shell: iptables -F && netfilter-persistent save
   when: disable_oci_firewall | bool and ansible_os_family == 'Debian'

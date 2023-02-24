@@ -8,7 +8,7 @@ If you want to allow remote access via SSH using keys, generate them before laun
 
 ## Role Variables
 
-### Required variables:
+### User-provided variables:
 
 `remove_root_password`
 
@@ -73,11 +73,13 @@ Description: Disable system firewall
 
 Type: boolean
 
-Description: Disable system firewall on Oracle Cloud instance (Ubuntu) 
+Description: Disable system firewall on Oracle Cloud instance (Ubuntu)
 
-### Optional variables:
+### Other variables:
 
-see *vars/main.yml* file.
+* see *vars/main.yml* file.
+
+* devsec ssh_hardening role variables available at https://github.com/dev-sec/ansible-collection-hardening/tree/master/roles/ssh_hardening
 
 ## Dependencies
 

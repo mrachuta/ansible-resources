@@ -1,0 +1,6 @@
+---
+- name: "[04.01] Include dev-sec ssh_hardening role"
+  ansible.builtin.include_role:
+    name: ssh_hardening
+  collections:
+    - devsec.hardening
