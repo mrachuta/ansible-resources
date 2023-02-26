@@ -1,0 +1,123 @@
+---
+- name: "[03.01] Populate service facts"
+  ansible.builtin.service_facts:
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.01
+
+- name: "[03.02] Set passwordless sudo"
+  ansible.builtin.template:
+    src: "templates/passwordless_sudo.j2"
+    dest: "/etc/sudoers.d/passwordless_sudo"
+    validate: "/usr/sbin/visudo -cf %s"
+    mode: "0600"
+  when: passwordless_sudo | bool
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.02
+
+- name: "[03.03] Set permissive mode on SELinux"
+  # Used shell to avoid isues with missing python's libselinux module
+  ansible.builtin.shell:
+    cmd: |
+      if grep -q 'SELINUX=enforcing' /etc/selinux/config; then
+        setenforce 0
+        sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+      else
+        exit 2
+      fi
+  register: selinuxscript
+  changed_when: selinuxscript.rc == 0
+  failed_when: selinuxscript.rc not in [0,2]
+  # Alias for fact
+  when: set_selinux_permissive | bool and ansible_os_family == 'RedHat'
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.03
+
+- name: "[03.04] Enable ufw"
+  ansible.builtin.systemd:
+    name: ufw
+    state: started
+    enabled: true
+    masked: false
+  # Alias for fact
+  when: "(not disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.04
+
+- name: "[03.05] Set deny policy on ufw (incoming)"
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+  when: not disable_system_firewall | bool
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.05
+
+- name: "[03.06] Set allow policy on ufw (outgoing)"
+  community.general.ufw:
+    state: enabled
+    policy: allow
+    direction: outgoing
+  when: not disable_system_firewall | bool
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.06
+
+- name: "[03.07] Add ufw rules"
+  community.general.ufw:
+    comment: "{{ item.comment }}"
+    direction: "{{ item.direction }}"
+    from_ip: "{{ item.from_ip }}"
+    proto: "{{ item.proto }}"
+    rule: "{{ item.rule }}"
+    to_port: "{{ item.to_port }}"
+  loop: "{{ ufw_rules }}"
+  when: not disable_system_firewall | bool
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.07
+
+- name: "[03.08] Disable ufw"
+  ansible.builtin.systemd:
+    name: ufw
+    state: stopped
+    masked: true
+    enabled: false
+  # Alias for fact
+  when: "(disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.08
+
+- name: "[03.09] Disable firewalld"
+  ansible.builtin.systemd:
+    name: firewalld
+    state: stopped
+    masked: true
+    enabled: false
+  # Alias for fact
+  when: "(disable_system_firewall | bool) and (services is defined) and ('firewalld.service' in services)"
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.09
+
+- name: "[03.10] Disable iptables"
+  ansible.builtin.shell: iptables -F && netfilter-persistent save
+  when: disable_oci_firewall | bool and ansible_os_family == 'Debian'
+  tags:
+    - always
+    - vmc.configure-security
+    - vmc.03.10

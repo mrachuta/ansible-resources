@@ -1,0 +1,65 @@
+#
+# {{ ansible_managed }}
+#
+
+# Custom function for transfer.sh support
+function transfer() {
+
+  URL="https://transfer.sh/"
+
+  if [[ -n "$1" ]] && [[ -n "$2" ]];
+  then
+    echo "Uploading file $1 with download-limit set to $2"
+    curl -H "Max-Days: 1" -H "Max-Downloads: $2" --upload-file $1 $URL$1
+    echo -e "\nUploading finished!"
+  elif [[ -n "$1" ]];
+  then
+    echo "Uploading file $1..."
+    curl -H "Max-Days: 1" --upload-file $1 $URL$1
+    echo -e "\nUploading finished!"
+  else
+    echo "No arguments were specified!"
+    echo "Usage: transfer filepath [maxdownloads]"
+    echo "For example: transfer file.txt 10"
+  fi
+
+}
+# end of custom function for transfer.sh support
+
+# Begin customizations for bash-completion
+complete -F __start_kubectl k
+# End of customizations for bash-completion
+
+# Begin of aliases list
+alias la="ls -all --block-size=k --color=auto --classify --human-readable"
+alias ll="ls -all --block-size=k --color=auto --classify --human-readable"
+alias lt="ls -all --block-size=k --color=auto --classify --human-readable --size -1 -S"
+alias l="ls --block-size=k --color=auto"
+alias ls="ls --block-size=k --color=auto"
+# Aliases for tmux
+alias tl="tmux ls"
+alias td="tmux detach"
+alias tq="tmux kill-session"
+alias t1="tmux new-session -A -s t1"
+alias t2="tmux new-session -A -s t2"
+alias t3="tmux new-session -A -s t3"
+alias t4="tmux new-session -A -s t4"
+alias snano="sudo nano"
+alias svim="sudo vim"
+alias ...="cd ../.."
+alias ..="cd .."
+alias shutdown="shutdown -h now"
+alias sshutdown="sudo shutdown -h now"
+alias reboot="shutdown -r now"
+alias sreboot="sudo shutdown -r now"
+alias scat="sudo cat"
+alias syum="sudo yum"
+alias sapt="sudo apt"
+alias c="clear"
+alias k="kubectl"
+alias p="podman"
+alias tfm="terraform"
+alias kns="kubectl config set-context --current --namespace "
+alias kctx="kubectl config use-context "
+#alias ktoken="kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | awk '/^deployment-controller-token-/{print $1}') | grep -Po 'token:\s*\K.*' | xclip -selection c"
+# End of aliases list

@@ -1,0 +1,28 @@
+#
+# {{ ansible_managed }}
+#
+
+# Window activity
+set -g monitor-activity on
+set -g visual-activity on
+
+# Enable mouse
+set -g mouse on
+
+# Buffer size
+set-option -g history-limit 10000
+
+# Pane colours
+set -g window-style 'fg=default,bg=colour235'
+set -g window-active-style 'fg=default,bg=colour000'
+
+# Pane border
+set -g pane-border-style 'bg=default'
+set -g pane-border-style 'fg=colour238'
+
+# Active pane border
+set -g pane-active-border-style 'bg=default'
+set -g pane-active-border-style 'fg=blue'
+
+# Enable color schema
+set -g default-terminal 'xterm-256color'

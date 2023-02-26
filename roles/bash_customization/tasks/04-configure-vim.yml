@@ -1,0 +1,64 @@
+---
+- name: "[04.01] Copy vimrc file"
+  ansible.builtin.template:
+    src: "templates/vimrc.j2"
+    dest: "/home/{{ default_user }}/.vimrc"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0640"
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.01
+
+- name: "[04.02] Create vim dirs"
+  ansible.builtin.file:
+    path: "/home/{{ default_user }}/.vim/{{ item }}"
+    state: directory
+    mode: '0740'
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+  loop:
+    - autoload
+    - colors
+    - bundle
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.02
+
+- name: "[04.03] Install pathogen"
+  ansible.builtin.get_url:
+    url: "https://tpo.pe/pathogen.vim"
+    dest: "/home/{{ default_user }}/.vim/autoload/pathogen.vim"
+    mode: "0640"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.03
+
+- name: "[04.04] Install color theme"
+  ansible.builtin.get_url:
+    url: "https://github.com/tomasr/molokai/raw/master/colors/molokai.vim"
+    dest: "/home/{{ default_user }}/.vim/colors/molokai.vim"
+    mode: "0640"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.04
+
+- name: "[04.05] Pull required vim addons from github"
+  ansible.builtin.git:
+    repo: "{{ item.url }}"
+    dest: "/home/{{ default_user }}/.vim/bundle/{{ (item.url | basename | split('.git'))[0] }}"
+    recursive: true
+    version: "{{ item.branch }}"
+  loop: "{{ vim_repos }}"
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.05

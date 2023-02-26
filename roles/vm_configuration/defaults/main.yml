@@ -1,0 +1,34 @@
+---
+remove_root_password: false
+
+create_default_user: true
+
+create_technical_user: true
+
+technical_user: "ans1ble"
+
+technical_user_ssh_key_path: "files/testuser_at_example_com.pub"
+
+default_user: "testuser"
+
+default_user_ssh_key_path: "files/testuser_at_example_com.pub"
+
+default_user_password_download_path: "/tmp/{{ default_user }}_{{ ansible_hostname }}_password"
+
+add_default_user_to_sudo: true
+
+passwordless_sudo: true
+
+set_selinux_permissive: true
+
+disable_system_firewall: true
+
+disable_oci_firewall: false
+
+ufw_rules:
+  - comment: "Allow http"
+    direction: "in"
+    from_ip: "any"
+    proto: "tcp"
+    rule: "allow"
+    to_port: "80"

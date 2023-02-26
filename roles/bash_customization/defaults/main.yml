@@ -1,0 +1,6 @@
+---
+default_user: "testuser"
+default_group: "{{ default_user }}"
+# Set value if you don't want to generate random one
+# https://www.ditig.com/256-colors-cheat-sheet
+bash_hostname_color: ""

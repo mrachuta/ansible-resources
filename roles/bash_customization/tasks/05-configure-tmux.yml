@@ -1,0 +1,12 @@
+---
+- name: "[05.01] Copy tmux config template"
+  ansible.builtin.template:
+    src: "templates/tmux.conf.j2"
+    dest: "/home/{{ default_user }}/.tmux.conf"
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0640"
+  tags:
+    - always
+    - bac.configure-tmux
+    - bac.05.01

@@ -1,0 +1,6 @@
+---
+- name: "Include all role tasks"
+  ansible.builtin.include_tasks: "{{ task_file }}"
+  with_items: "{{ lookup('fileglob', role_path + '/tasks/*-*.yml', wantlist=true) | sort }}"
+  loop_control:
+    loop_var: task_file
