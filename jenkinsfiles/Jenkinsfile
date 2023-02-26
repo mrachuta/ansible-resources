@@ -1,0 +1,92 @@
+
+def privateRegistryAddress = 'nexus3.k8s.lan:50000'
+
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'default'
+            yaml """
+            spec:
+              containers:
+                - name: redhat8-ansible
+                  image: "${privateRegistryAddress}/redhat8-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+                - name: ubuntu-ansible
+                  image: "${privateRegistryAddress}/ubuntu-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+            """
+        }
+    }
+    options {
+        buildDiscarder(
+            logRotator(numToKeepStr: '5')
+        )
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(
+            time: 1,
+            unit: 'HOURS'
+        )
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+        ansiColor('xterm')
+    }
+    parameters {
+        string(
+            defaultValue: '',
+            description: 'Pass relative path of playbook to be tested',
+            name: 'PLAYBOOK_PATH',
+            trim: true
+        )
+        string(
+            defaultValue: '',
+            description: 'Additional ansible params like --skip-tags etc.',
+            name: 'ANSIBLE_ADDITIONAL_PARAMS',
+            trim: true
+        )
+    }
+    stages {
+        stage('Pull Repository') {
+            steps {
+                git(
+                    credentialsId: 'github-access-token-mrachuta',
+                    url: 'https://github.com/mrachuta/ansible-resources.git',
+                    branch: 'develop'
+                )
+            }
+        }
+        stage('Run tests') {
+            parallel {
+                stage('Run tests on redhat8') {
+                    steps {
+                        container('redhat8-ansible') {
+                            sh 'ansible-wrapper'
+                        }
+                    }
+                }
+                stage('Run tests on ubuntu') {
+                    steps {
+                        container('ubuntu-ansible') {
+                            sh 'ansible-wrapper'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
