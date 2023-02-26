@@ -46,6 +46,9 @@ pipeline {
         durabilityHint('PERFORMANCE_OPTIMIZED')
         ansiColor('xterm')
     }
+    environment {
+        WORKSPACE_ANSIBLE = "/ansible_workspace/workspace/${env.WORKSPACE.split('/').last()}"
+    }
     parameters {
         string(
             defaultValue: '',
@@ -61,6 +64,7 @@ pipeline {
         )
     }
     stages {
+        /* Enable step if using no multibranch pipeline
         stage('Pull Repository') {
             steps {
                 git(
@@ -70,19 +74,24 @@ pipeline {
                 )
             }
         }
+        */
         stage('Run tests') {
             parallel {
                 stage('Run tests on redhat8') {
                     steps {
-                        container('redhat8-ansible') {
-                            sh 'ansible-wrapper'
+                        withEnv(["PLAYBOOK_PATH=/${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
+                            container('redhat8-ansible') {
+                                sh 'ansible-wrapper'
+                            }
                         }
                     }
                 }
                 stage('Run tests on ubuntu') {
                     steps {
-                        container('ubuntu-ansible') {
-                            sh 'ansible-wrapper'
+                        withEnv(["PLAYBOOK_PATH=${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
+                            container('redhat8-ansible') {
+                                sh 'ansible-wrapper'
+                            }
                         }
                     }
                 }
