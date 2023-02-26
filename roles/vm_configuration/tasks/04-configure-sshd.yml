@@ -4,3 +4,7 @@
     name: ssh_hardening
   collections:
     - devsec.hardening
+  tags:
+    - always
+    - vmc.configure-sshd
+    - vmc.04.01

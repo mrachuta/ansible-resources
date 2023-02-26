@@ -8,18 +8,30 @@
         name: epel-release
         state: present
       when: ansible_distribution == 'CentOS'
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.01
 
     - name: "[01.02] Add EPEL repo key - RHEL"
       ansible.builtin.rpm_key:
         state: present
         key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version  }}"
       when: ansible_distribution == 'RedHat'
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.02
 
     - name: "[01.03] Enable EPEL repo - RHEL"
       ansible.builtin.dnf:
         name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version  }}.noarch.rpm"
         state: present
       when: ansible_distribution == 'RedHat'
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.03
 
     - name: "[01.04] Enable EPEL repo - OracleLinux"
       ansible.builtin.lineinfile:
@@ -27,6 +39,10 @@
         regexp: "^enabled=0$"
         line: enabled=1
       when: ansible_distribution == 'OracleLinux'
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.04
 
 - name: "Add external repos"
   block:
@@ -36,6 +52,10 @@
         state: directory
         mode: '0755'
       when: ansible_os_family == 'Debian'
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.05
 
     - name: "[01.06] Add external repos - add repo key"
       ansible.builtin.get_url:
@@ -44,6 +64,10 @@
         mode: '0644'
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.06
 
     - name: "[01.07] Add external repos - de-armor key"
       ansible.builtin.shell: >
@@ -54,6 +78,10 @@
         creates: "/etc/apt/keyrings/{{ item.name }}.gpg"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'Debian' and item.apt_gpg_url | length > 0
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.07
 
     - name: "[01.08] Add external repos - add apt repo"
       ansible.builtin.apt_repository:
@@ -62,6 +90,10 @@
         filename: "{{ item.name }}"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'Debian' and item.apt_repo_url | length > 0
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.08
 
     - name: "[01.09] Add external repos - add yum repo"
       ansible.builtin.yum_repository:
@@ -74,6 +106,10 @@
         gpgkey: "{{ item.yum_gpg_url }}"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.09
 
 - name: "[01.10] Install required packages"
   ansible.builtin.package:
@@ -82,10 +118,18 @@
   # Ignore errors for OS-specific packages
   ignore_errors: true
   loop: "{{ packages_to_install }}"
+  tags:
+    - always
+    - vmc.initial-setup
+    - vmc.01.10
 
 - name: "[01.11] Install virtualenvwrapper"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
+  tags:
+    - always
+    - vmc.initial-setup
+    - vmc.01.11
 
 - name: "Ensure 'python3' command"
   block:
@@ -93,6 +137,10 @@
       ansible.builtin.stat:
         path: "/usr/bin/python3"
       register: python3_command
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.12
 
     - name: "[01.13] Create symlink if 'python3' command not exists"
       ansible.builtin.file:
@@ -100,3 +148,7 @@
         dest: "/usr/bin/python3"
         state: link
       when: not python3_command.stat.exists
+      tags:
+        - always
+        - vmc.initial-setup
+        - vmc.01.13

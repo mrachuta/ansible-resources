@@ -6,6 +6,10 @@
   register: machine_color
   changed_when: false
   when: bash_hostname_color is not defined or bash_hostname_color | length == 0
+  tags:
+    - always
+    - bac.configure-bashrc
+    - bac.03.01
 
 - name: "[03.02] Copy bashrc file"
   ansible.builtin.template:
@@ -14,3 +18,7 @@
     owner: "{{ default_user }}"
     group: "{{ default_group }}"
     mode: "0640"
+  tags:
+    - always
+    - bac.configure-bashrc
+    - bac.03.02

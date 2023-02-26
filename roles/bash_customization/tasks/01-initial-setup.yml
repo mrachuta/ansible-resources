@@ -4,10 +4,18 @@
     name: "{{ item }}"
     state: present
   loop: "{{ packages_to_install }}"
+  tags:
+    - always
+    - bac.initial-setup
+    - bac.01.01
 
 - name: "[01.02] Install virtualenvwrapper"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
+  tags:
+    - always
+    - bac.initial-setup
+    - bac.01.02
 
 - name: "Enable bash-completion for kubectl if exists"
   block:
@@ -16,6 +24,10 @@
       register: kubectl_exists
       failed_when: false
       changed_when: false
+      tags:
+        - always
+        - bac.initial-setup
+        - bac.01.03
 
     - name: "[01.04] Enable bash-completion for kubectl"
       ansible.builtin.shell: |
@@ -23,6 +35,10 @@
       args:
         creates: /etc/bash_completion.d/kubectl
       when: kubectl_exists.rc == 0
+      tags:
+        - always
+        - bac.initial-setup
+        - bac.01.04
 
 - name: "Ensure 'python3' command exists"
   block:
@@ -30,6 +46,11 @@
       ansible.builtin.stat:
         path: "/usr/bin/python3"
       register: python3_command
+      tags:
+        - always
+        - bac.initial-setup
+        - bac.01.05
+
 
     - name: "[01.06]  Create symlink if 'python3' command not exists"
       ansible.builtin.file:
@@ -37,3 +58,7 @@
         dest: "/usr/bin/python3"
         state: link
       when: not python3_command.stat.exists
+      tags:
+        - always
+        - bac.initial-setup
+        - bac.01.06
