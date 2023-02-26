@@ -1,8 +1,4 @@
 ---
-create_default_user: true
-
-create_technical_user: true
-
 apt_gpg_key_extension: "{{ item.apt_gpg_url | basename | split('.') | last | default('gpg') }}"
 
 architecture_map:
@@ -73,17 +69,3 @@ repo_list:
     apt_gpg_url: "https://baltocdn.com/helm/signing.asc"
     yum_repo_url: ""
     yum_gpg_url: ""
-
-ufw_rules:
-  - comment: "Allow sshd on custom port"
-    direction: "in"
-    from_ip: "any"
-    proto: "tcp"
-    rule: "allow"
-    to_port: "28828"
-  - comment: "Allow node-exporter"
-    direction: "in"
-    from_ip: "any"
-    proto: "tcp"
-    rule: "allow"
-    to_port: "40244"

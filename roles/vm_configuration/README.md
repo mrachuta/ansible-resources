@@ -16,6 +16,14 @@ Type: boolean
 
 Description: Remove password from root account to prevent direct login
 
+
+`create_technical_user`
+
+Type: boolean
+
+Description: Switch to create or not technical user account
+
+
 `technical_user`
 
 Type: string
@@ -27,6 +35,12 @@ Description: Name of technical user (to be used for example as ansible user in f
 Type: string
 
 Description: Full path to public ssh key to be added to technical user account
+
+`create_default_user`
+
+Type: boolean
+
+Description: Switch to create or not defalt user account
 
 `default_user`
 
@@ -74,6 +88,12 @@ Description: Disable system firewall
 Type: boolean
 
 Description: Disable system firewall on Oracle Cloud instance (Ubuntu)
+
+`ufw_rules`
+
+Type: dict
+
+Description: Rules to be added to ufw; see *defaults/main.yml* for more details
 
 ### Other variables:
 
