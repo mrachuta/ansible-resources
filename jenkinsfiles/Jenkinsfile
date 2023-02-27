@@ -47,7 +47,8 @@ pipeline {
         ansiColor('xterm')
     }
     environment {
-        WORKSPACE_ANSIBLE = "/ansible_workspace/workspace/${env.WORKSPACE.split('/').last()}"
+        // Redefine workspace because of custom path
+        WORKSPACE_ANSIBLE = "workspace/${env.WORKSPACE.split('/').last()}"
     }
     parameters {
         string(
@@ -79,6 +80,7 @@ pipeline {
             parallel {
                 stage('Run tests on redhat8') {
                     steps {
+                        // Redefine PLAYBOOK_PATH on-the-fly to pass correct path to script
                         withEnv(["PLAYBOOK_PATH=/${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
                             container('redhat8-ansible') {
                                 sh 'ansible-wrapper'
