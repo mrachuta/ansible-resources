@@ -81,7 +81,7 @@ pipeline {
                 stage('Run tests on redhat8') {
                     steps {
                         // Redefine PLAYBOOK_PATH on-the-fly to pass correct path to script
-                        withEnv(["PLAYBOOK_PATH=/${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
+                        withEnv(["PLAYBOOK_PATH=${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
                             container('redhat8-ansible') {
                                 sh 'ansible-wrapper'
                             }
