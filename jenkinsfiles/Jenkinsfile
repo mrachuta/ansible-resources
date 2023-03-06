@@ -80,19 +80,35 @@ pipeline {
             parallel {
                 stage('Run tests on redhat8') {
                     steps {
-                        // Redefine PLAYBOOK_PATH on-the-fly to pass correct path to script
-                        withEnv(["PLAYBOOK_PATH=${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
-                            container('redhat8-ansible') {
-                                sh 'ansible-wrapper'
+                        script {
+                            // Redefine PLAYBOOK_PATH on-the-fly to pass correct path to script
+                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"
+                            env.CONTAINER_NAME = 'redhat8-ansible'
+                            container(env.CONTAINER_NAME) {
+                                sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
+                                /* 
+                                Workaround to verify status of task, because Jenkins is always
+                                showing exit code as 0 for unknown reason
+                                */
+                                def commandOutput = readFile("${env.CONTAINER_NAME}.log")
+                                if (commandOutput.contains('Test phase finished with status FAILED')) {
+                                    error('Stage failed')
+                                }
                             }
                         }
                     }
                 }
                 stage('Run tests on ubuntu') {
                     steps {
-                        withEnv(["PLAYBOOK_PATH=${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"]) {
-                            container('redhat8-ansible') {
-                                sh 'ansible-wrapper'
+                        script {
+                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH}"
+                            env.CONTAINER_NAME = 'ubuntu-ansible'
+                            container(env.CONTAINER_NAME) {
+                                sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
+                                def commandOutput = readFile("${env.CONTAINER_NAME}.log")
+                                if (commandOutput.contains('Test phase finished with status FAILED')) {
+                                    error('Stage failed')
+                                }
                             }
                         }
                     }
