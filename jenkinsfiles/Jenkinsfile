@@ -49,12 +49,21 @@ pipeline {
     environment {
         // Redefine workspace because of custom path
         WORKSPACE_ANSIBLE = "workspace/${env.WORKSPACE.split('/').last()}"
+        SINGLE_PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.SINGLE_PLAYBOOK_PATH}"
+        ROLE_ROOT_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}"
+        ROLE_PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}/tests/test.yml"
     }
     parameters {
         string(
             defaultValue: '',
-            description: 'Pass relative path of playbook to be tested',
-            name: 'PLAYBOOK_PATH_JENKINS',
+            description: 'Pass relative path of playbook to be tested (if it is a single playbook)',
+            name: 'SINGLE_PLAYBOOK_PATH',
+            trim: true
+        )
+        string(
+            defaultValue: '',
+            description: 'Pass relative path to root of role (if it is a role)',
+            name: 'ROLE_ROOT_PATH',
             trim: true
         )
         string(
@@ -76,13 +85,30 @@ pipeline {
             }
         }
         */
+        stage('Run ansible-lint') {
+            steps {
+                container('ubuntu-ansible') {
+                    script {
+                        if (env.ROLE_ROOT_PATH_JENKINS.length() != 0) {
+                            sh 'ansible-lint --offline $ROLE_PATH'
+                        } else {
+                            sh 'ansible-lint --offline $SINGLE_PLAYBOOK_PATH'
+                        }
+                    }
+                }
+            }
+        }
         stage('Run tests') {
             parallel {
                 stage('Run tests on redhat8') {
                     steps {
                         script {
-                            // Define PLAYBOOK_PATH basing on current workspace and parameter
-                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH_JENKINS}"
+                            // Define PLAYBOOK_PATH basing on current param
+                            if (env.ROLE_ROOT_PATH_JENKINS.length() != 0) {
+                                env.PLAYBOOK_PATH = env.ROLE_PLAYBOOK_PATH
+                            } else {
+                                env.PLAYBOOK_PATH = env.SINGLE_PLAYBOOK_PATH
+                            }
                             env.CONTAINER_NAME = 'redhat8-ansible'
                             container(env.CONTAINER_NAME) {
                                 sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
@@ -101,7 +127,11 @@ pipeline {
                 stage('Run tests on ubuntu') {
                     steps {
                         script {
-                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH_JENKINS}"
+                            if (env.ROLE_ROOT_PATH_JENKINS.length() != 0) {
+                                env.PLAYBOOK_PATH = env.ROLE_PLAYBOOK_PATH
+                            } else {
+                                env.PLAYBOOK_PATH = env.SINGLE_PLAYBOOK_PATH
+                            }
                             env.CONTAINER_NAME = 'ubuntu-ansible'
                             container(env.CONTAINER_NAME) {
                                 sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
