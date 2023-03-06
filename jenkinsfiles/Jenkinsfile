@@ -1,0 +1,119 @@
+
+def privateRegistryAddress = 'nexus3.k8s.lan:50000'
+
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'default'
+            yaml """
+            spec:
+              containers:
+                - name: redhat8-ansible
+                  image: "${privateRegistryAddress}/redhat8-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+                - name: ubuntu-ansible
+                  image: "${privateRegistryAddress}/ubuntu-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+            """
+        }
+    }
+    options {
+        buildDiscarder(
+            logRotator(numToKeepStr: '5')
+        )
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(
+            time: 1,
+            unit: 'HOURS'
+        )
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+        ansiColor('xterm')
+    }
+    environment {
+        // Redefine workspace because of custom path
+        WORKSPACE_ANSIBLE = "workspace/${env.WORKSPACE.split('/').last()}"
+    }
+    parameters {
+        string(
+            defaultValue: '',
+            description: 'Pass relative path of playbook to be tested',
+            name: 'PLAYBOOK_PATH_JENKINS',
+            trim: true
+        )
+        string(
+            defaultValue: '',
+            description: 'Additional ansible params like --skip-tags etc.',
+            name: 'ANSIBLE_ADDITIONAL_PARAMS',
+            trim: true
+        )
+    }
+    stages {
+        /* Enable step if using no multibranch pipeline
+        stage('Pull Repository') {
+            steps {
+                git(
+                    credentialsId: 'github-access-token-mrachuta',
+                    url: 'https://github.com/mrachuta/ansible-resources.git',
+                    branch: 'develop'
+                )
+            }
+        }
+        */
+        stage('Run tests') {
+            parallel {
+                stage('Run tests on redhat8') {
+                    steps {
+                        script {
+                            // Define PLAYBOOK_PATH basing on current workspace and parameter
+                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH_JENKINS}"
+                            env.CONTAINER_NAME = 'redhat8-ansible'
+                            container(env.CONTAINER_NAME) {
+                                sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
+                                /* 
+                                Workaround to verify status of task, because Jenkins is always
+                                showing exit code as 0 for unknown reason
+                                */
+                                def commandOutput = readFile("${env.CONTAINER_NAME}.log")
+                                if (commandOutput.contains('Test phase finished with status FAILED')) {
+                                    error('Stage failed')
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Run tests on ubuntu') {
+                    steps {
+                        script {
+                            env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.PLAYBOOK_PATH_JENKINS}"
+                            env.CONTAINER_NAME = 'ubuntu-ansible'
+                            container(env.CONTAINER_NAME) {
+                                sh 'ansible-wrapper 2>&1 | tee -a ${CONTAINER_NAME}.log'
+                                def commandOutput = readFile("${env.CONTAINER_NAME}.log")
+                                if (commandOutput.contains('Test phase finished with status FAILED')) {
+                                    error('Stage failed')
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
