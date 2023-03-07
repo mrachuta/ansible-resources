@@ -88,8 +88,7 @@ pipeline {
             steps{
                 script{
                     if ((env.ROLE_ROOT_PATH.length() != 0) && (env.SINGLE_PLAYBOOK_PATH.length() != 0)) {
-                        error('You can\'t use both ROLE_ROOT_PATH and SINGLE_PLAYBOOK_PATH \
-                            parameters at the same time. Specify only one')
+                        error('You can\'t use both ROLE_ROOT_PATH and SINGLE_PLAYBOOK_PATH parameters at the same time. Specify only one.')
                     } else if (env.ROLE_ROOT_PATH.length() != 0) {
                         testedObject = 'ROLE'
                         // Remove trailing slash
@@ -111,7 +110,7 @@ pipeline {
                         env.SONAR_PROJECT_NAME = "Ansible/playbook ${playbookName}"
                         env.SONAR_FILES_TO_INCLUDE = env.SINGLE_PLAYBOOK_PATH
                     } else {
-                        error('You need to specify ROLE_ROOT_PATH or SINGLE_PLAYBOOK_PATH')
+                        error('You need to specify one of: ROLE_ROOT_PATH or SINGLE_PLAYBOOK_PATH.')
                     }
                     echo "Detected Ansible object: ${testedObject}"
                 }
