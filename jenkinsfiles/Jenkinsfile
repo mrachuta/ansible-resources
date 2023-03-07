@@ -1,4 +1,5 @@
 def privateRegistryAddress = 'nexus3.k8s.lan:50000'
+def testedObject = ''
 
 pipeline {
     agent {
@@ -50,21 +51,18 @@ pipeline {
     environment {
         // Redefine workspace because of custom path
         WORKSPACE_ANSIBLE = "workspace/${env.WORKSPACE.split('/').last()}"
-        SINGLE_PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.SINGLE_PLAYBOOK_PATH}"
-        //ROLE_ROOT_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}"
-        ROLE_PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}/tests/test.yml"
     }
     parameters {
         string(
             defaultValue: '',
-            description: 'Pass relative path of playbook to be tested (if it is a single playbook)',
-            name: 'SINGLE_PLAYBOOK_PATH',
+            description: 'Pass relative path to root of role (if it is a role)',
+            name: 'ROLE_ROOT_PATH',
             trim: true
         )
         string(
             defaultValue: '',
-            description: 'Pass relative path to root of role (if it is a role)',
-            name: 'ROLE_ROOT_PATH',
+            description: 'Pass relative path of playbook to be tested (if it is a single playbook)',
+            name: 'SINGLE_PLAYBOOK_PATH',
             trim: true
         )
         string(
@@ -86,41 +84,78 @@ pipeline {
             }
         }
         */
+        stage('Validate and prepare params') {
+            steps{
+                script{
+                    if ((env.ROLE_ROOT_PATH.length() != 0) && (env.SINGLE_PLAYBOOK_PATH.length() != 0)) {
+                        error('You can\'t use both ROLE_ROOT_PATH and SINGLE_PLAYBOOK_PATH \
+                            parameters at the same time. Specify only one')
+                    } else if (env.ROLE_ROOT_PATH.length() != 0) {
+                        testedObject = 'ROLE'
+                        // Remove trailing slash
+                        if (env.ROLE_ROOT_PATH.endsWith("/")) {
+                            env.ROLE_ROOT_PATH = env.ROLE_ROOT_PATH.substring(0, env.ROLE_ROOT_PATH.length() - 1)
+                        }
+                        // Declare env to be used in container
+                        env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}/tests/test.yml"
+                        // Declare Sonarqube vars
+                        def roleName = env.ROLE_ROOT_PATH.split('/')[-1]
+                        env.SONAR_PROJECT_KEY = "ansible-role-${roleName}"
+                        env.SONAR_PROJECT_NAME = "Ansible/role ${roleName}"
+                        env.SONAR_FILES_TO_INCLUDE = "${env.ROLE_ROOT_PATH}/**"
+                    } else if (env.SINGLE_PLAYBOOK_PATH.length() != 0) {
+                        testedObject = 'SINGLE_PLAYBOOK'
+                        env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.SINGLE_PLAYBOOK_PATH}"
+                        def playbookName = env.SINGLE_PLAYBOOK_PATH.split('/')[-1]
+                        env.SONAR_PROJECT_KEY = "ansible-playbook-${playbookName}"
+                        env.SONAR_PROJECT_NAME = "Ansible/playbook ${playbookName}"
+                        env.SONAR_FILES_TO_INCLUDE = env.SINGLE_PLAYBOOK_PATH
+                    } else {
+                        error('You need to specify ROLE_ROOT_PATH or SINGLE_PLAYBOOK_PATH')
+                    }
+                    echo "Detected Ansible object: ${testedObject}"
+                }
+            }
+        }
         stage('Run ansible-lint') {
             steps {
                 script {
                     withEnv(["PATH+EXTRA=/home/jenkins/.local/bin"]) {
                         sh 'pip3 install ansible-core==2.12 mitogen==0.3.3 ansible-lint==6.12'
-                        if (env.ROLE_ROOT_PATH.length() != 0) {
-                            dir(env.ROLE_ROOT_PATH) {
-                                sh 'ansible-lint -p -v .'
+                        switch (testedObject) {
+                            case 'ROLE':
+                                dir(env.ROLE_ROOT_PATH) {
+                                    sh 'ansible-lint -p -v .'
+                                    recordIssues(
+                                        enabledForFailure: true,
+                                        ignoreQualityGate: true,
+                                        skipBlames: true,
+                                        skipPublishingChecks: true,
+                                        sourceDirectories: [
+                                            [path: '.']
+                                        ],
+                                        tools: [
+                                            ansibleLint(skipSymbolicLinks: true)
+                                        ]
+                                    )
+                                }
+                                break
+                            case 'SINGLE_PLAYBOOK':
+                                sh 'ansible-lint -p -v ${SINGLE_PLAYBOOK_PATH}'
                                 recordIssues(
                                     enabledForFailure: true,
                                     ignoreQualityGate: true,
                                     skipBlames: true,
                                     skipPublishingChecks: true,
                                     sourceDirectories: [
-                                        [path: '.']
+                                        [path: env.SINGLE_PLAYBOOK_PATH]
                                     ],
                                     tools: [
                                         ansibleLint(skipSymbolicLinks: true)
                                     ]
                                 )
-                            }
-                        } else {
-                            sh 'ansible-lint -p -v ${SINGLE_PLAYBOOK_PATH}'
-                            recordIssues(
-                                enabledForFailure: true,
-                                ignoreQualityGate: true,
-                                skipBlames: true,
-                                skipPublishingChecks: true,
-                                sourceDirectories: [
-                                    [path: env.SINGLE_PLAYBOOK_PATH]
-                                ],
-                                tools: [
-                                    ansibleLint(skipSymbolicLinks: true)
-                                ]
-                            )
+                            default:
+                                error('No object passed to be tested in SonarQube')
                         }
                     }
                 }
@@ -129,9 +164,6 @@ pipeline {
         stage('Run Sonarqube analysis') {
             steps {
                 script {
-                    env.SONAR_PROJECT_KEY = "ansible-${env.ROLE_ROOT_PATH.split('/')[0]}-${env.ROLE_ROOT_PATH.split('/')[1]}"
-                    env.SONAR_PROJECT_NAME = "Ansible ${env.ROLE_ROOT_PATH.split('/')[0]} - ${env.ROLE_ROOT_PATH.split('/')[1]}"
-                    env.SONAR_FILES_TO_INCLUDE = "${env.ROLE_ROOT_PATH}**"
                     def scannerHome = tool('sonarqube_scanner_default')
                     def nodeHome = tool('nodejs_default')
                     withEnv(["PATH+EXTRA=${scannerHome}/bin:${nodeHome}/bin"]) {
@@ -155,14 +187,7 @@ pipeline {
                 stage('Run tests on redhat8') {
                     steps {
                         script {
-                            // Define PLAYBOOK_PATH basing on current param
-                            if (env.ROLE_ROOT_PATH.length() != 0) {
-                                env.PLAYBOOK_PATH = env.ROLE_PLAYBOOK_PATH
-                            } else {
-                                env.PLAYBOOK_PATH = env.SINGLE_PLAYBOOK_PATH
-                            }
-                            env.CONTAINER_NAME = 'redhat8-ansible'
-                            container(env.CONTAINER_NAME) {
+                            container('redhat8-ansible') {
                                 sh 'ansible-wrapper'
                             }
                         }
@@ -171,13 +196,7 @@ pipeline {
                 stage('Run tests on ubuntu') {
                     steps {
                         script {
-                            if (env.ROLE_ROOT_PATH.length() != 0) {
-                                env.PLAYBOOK_PATH = env.ROLE_PLAYBOOK_PATH
-                            } else {
-                                env.PLAYBOOK_PATH = env.SINGLE_PLAYBOOK_PATH
-                            }
-                            env.CONTAINER_NAME = 'ubuntu-ansible'
-                            container(env.CONTAINER_NAME) {
+                            container('ubuntu-ansible') {
                                 sh 'ansible-wrapper'
                             }
                         }
