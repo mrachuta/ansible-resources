@@ -4,10 +4,5 @@
   # Force linear strategy to make playbook more stable
   strategy: linear
   become: true
-  pre_tasks:
-    - name: "Install sshd server for test purposes"
-      ansible.builtin.package:
-        name: openssh-server
-        state: present
   roles:
     - ../../vm_configuration
