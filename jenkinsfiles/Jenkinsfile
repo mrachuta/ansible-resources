@@ -5,6 +5,7 @@ pipeline {
     agent {
         kubernetes {
             inheritFrom 'jenkins-agent-python'
+            // default limits and requests applied on namespace lvl
             yaml """
             spec:
               containers:
