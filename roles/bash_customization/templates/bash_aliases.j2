@@ -28,6 +28,8 @@ function transfer() {
 
 # Begin customizations for bash-completion
 complete -F __start_kubectl k
+complete -C /usr/bin/terraform terraform
+complete -C /usr/bin/terraform tfm
 # End of customizations for bash-completion
 
 # Begin of aliases list
@@ -58,6 +60,7 @@ alias sapt="sudo apt"
 alias c="clear"
 alias k="kubectl"
 alias p="podman"
+alias sp="sudo podman"
 alias tfm="terraform"
 alias kns="kubectl config set-context --current --namespace "
 alias kctx="kubectl config use-context "
