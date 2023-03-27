@@ -4,7 +4,8 @@ def testedObject = ''
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'customnode'
+            inheritFrom 'jenkins-agent-python'
+            // default limits and requests applied on namespace lvl
             yaml """
             spec:
               containers:
