@@ -1,7 +1,5 @@
 - name: Provision node-exporter
   hosts: "{{ target_hosts }}"
-  vars_files:
-    - vars/external-vars.yml
   become: yes
   pre_tasks:
 
@@ -14,11 +12,14 @@
 
     - name: Copy certs
       copy:
-        src: resources/node_exporter/
-        dest: /etc/node_exporter/
+        src: "resources/node_exporter/{{ item }}"
+        dest: "/etc/node_exporter/{{ item | basename }}"
         owner: root
         group: root
         mode: 700
+      loop:
+        - "{{ inventory_hostname }}/{{ inventory_hostname }}.crt"
+        - "{{ inventory_hostname }}/{{ inventory_hostname }}.key"
 
   roles:
-    - cloudalchemy.node_exporter
+    - prometheus.prometheus.node_exporter
