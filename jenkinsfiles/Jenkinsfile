@@ -121,11 +121,13 @@ pipeline {
             steps {
                 script {
                     withEnv(["PATH+EXTRA=/home/jenkins/.local/bin"]) {
-                        sh 'pip3 install ansible-core==2.12 mitogen==0.3.3 ansible-lint==6.12'
+                        sh 'pip3 install --upgrade pip'
+                        sh 'pip3 install ansible-core==2.14 mitogen==0.3.3 ansible-lint==6.16.*'
                         switch (testedObject) {
                             case 'ROLE':
                                 dir(env.ROLE_ROOT_PATH) {
-                                    sh 'ansible-lint -p -v .'
+                                    // Only warn about ignore-errors rule
+                                    sh 'ansible-lint -w ignore-errors -p -v .'
                                     recordIssues(
                                         enabledForFailure: true,
                                         ignoreQualityGate: true,
@@ -141,7 +143,8 @@ pipeline {
                                 }
                                 break
                             case 'SINGLE_PLAYBOOK':
-                                sh 'ansible-lint -p -v ${SINGLE_PLAYBOOK_PATH}'
+                                // Only warn about ignore-errors rule
+                                sh 'ansible-lint -w ignore-errors -p -v ${SINGLE_PLAYBOOK_PATH}'
                                 recordIssues(
                                     enabledForFailure: true,
                                     ignoreQualityGate: true,

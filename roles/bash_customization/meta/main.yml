@@ -1,4 +1,6 @@
 galaxy_info:
+  role_name: bash_customization
+  namespace: mrachuta
   author: "Mateusz Rachuta"
   description: "Role to configure bash and assisting tools"
   company: ""
