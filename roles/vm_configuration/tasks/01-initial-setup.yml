@@ -116,7 +116,7 @@
     name: "{{ item }}"
     state: present
   # Ignore errors for OS-specific packages
-  ignore_errors: true
+  failed_when: false
   loop: "{{ packages_to_install }}"
   tags:
     - always
