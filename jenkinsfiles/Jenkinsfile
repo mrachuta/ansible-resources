@@ -121,6 +121,7 @@ pipeline {
             steps {
                 script {
                     withEnv(["PATH+EXTRA=/home/jenkins/.local/bin"]) {
+                        sh 'pip3 install --upgrade pip'
                         sh 'pip3 install ansible-core==2.14 mitogen==0.3.3 ansible-lint==6.16'
                         switch (testedObject) {
                             case 'ROLE':
