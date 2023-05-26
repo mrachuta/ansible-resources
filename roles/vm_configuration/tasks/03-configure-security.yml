@@ -118,6 +118,7 @@
   ansible.builtin.shell: iptables -F && netfilter-persistent save
   register: cmdout
   failed_when: cmdout.rc != 0
+  changed_when: cmdout.rc == 0
   when: disable_oci_firewall | bool and ansible_os_family == 'Debian'
   tags:
     - always
