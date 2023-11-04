@@ -1,0 +1,211 @@
+def privateRegistryAddress = 'nexus3.k8s.lan:50000'
+def testedObject = ''
+
+pipeline {
+    agent {
+        kubernetes {
+            inheritFrom 'jenkins-agent-python'
+            // default limits and requests applied on namespace lvl
+            yaml """
+            spec:
+              containers:
+                - name: redhat8-ansible
+                  image: "${privateRegistryAddress}/redhat8-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+                  imagePullPolicy: Always
+                - name: ubuntu-ansible
+                  image: "${privateRegistryAddress}/ubuntu-ansible:1.0"
+                  command:
+                  - "sleep"
+                  args:
+                  - "999999"
+                  restartPolicy: Never
+                  volumeMounts:
+                  - mountPath: "/ansible_workspace"
+                    name: "workspace-volume"
+                    readOnly: false
+                  imagePullPolicy: Always
+            """
+        }
+    }
+    options {
+        buildDiscarder(
+            logRotator(numToKeepStr: '5')
+        )
+        timestamps()
+        disableConcurrentBuilds()
+        timeout(
+            time: 1,
+            unit: 'HOURS'
+        )
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+        ansiColor('xterm')
+    }
+    environment {
+        // Redefine workspace because of custom path
+        WORKSPACE_ANSIBLE = "workspace/${env.WORKSPACE.split('/').last()}"
+    }
+    parameters {
+        string(
+            defaultValue: '',
+            description: 'Pass relative path to root of role (if it is a role)',
+            name: 'ROLE_ROOT_PATH',
+            trim: true
+        )
+        string(
+            defaultValue: '',
+            description: 'Pass relative path of playbook to be tested (if it is a single playbook)',
+            name: 'SINGLE_PLAYBOOK_PATH',
+            trim: true
+        )
+        string(
+            defaultValue: '',
+            description: 'Additional ansible params like --skip-tags etc.',
+            name: 'ANSIBLE_ADDITIONAL_PARAMS',
+            trim: true
+        )
+    }
+    stages {
+        /* Enable step if using no multibranch pipeline
+        stage('Pull Repository') {
+            steps {
+                git(
+                    credentialsId: 'github-access-token-mrachuta',
+                    url: 'https://github.com/mrachuta/ansible-resources.git',
+                    branch: 'develop'
+                )
+            }
+        }
+        */
+        stage('Validate and prepare params') {
+            steps{
+                script{
+                    if ((env.ROLE_ROOT_PATH.length() != 0) && (env.SINGLE_PLAYBOOK_PATH.length() != 0)) {
+                        error('You can\'t use both ROLE_ROOT_PATH and SINGLE_PLAYBOOK_PATH parameters at the same time. Specify only one.')
+                    } else if (env.ROLE_ROOT_PATH.length() != 0) {
+                        testedObject = 'ROLE'
+                        // Remove trailing slash
+                        if (env.ROLE_ROOT_PATH.endsWith("/")) {
+                            env.ROLE_ROOT_PATH = env.ROLE_ROOT_PATH.substring(0, env.ROLE_ROOT_PATH.length() - 1)
+                        }
+                        // Declare env to be used in container
+                        env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.ROLE_ROOT_PATH}/tests/test.yml"
+                        // Declare Sonarqube vars
+                        def roleName = env.ROLE_ROOT_PATH.split('/')[-1]
+                        env.SONAR_PROJECT_KEY = "ansible-role-${roleName}"
+                        env.SONAR_PROJECT_NAME = "Ansible/role ${roleName}"
+                        env.SONAR_FILES_TO_INCLUDE = "${env.ROLE_ROOT_PATH}/**"
+                    } else if (env.SINGLE_PLAYBOOK_PATH.length() != 0) {
+                        testedObject = 'SINGLE_PLAYBOOK'
+                        env.PLAYBOOK_PATH = "${env.WORKSPACE_ANSIBLE}/${env.SINGLE_PLAYBOOK_PATH}"
+                        def playbookName = env.SINGLE_PLAYBOOK_PATH.split('/')[-1]
+                        env.SONAR_PROJECT_KEY = "ansible-playbook-${playbookName}"
+                        env.SONAR_PROJECT_NAME = "Ansible/playbook ${playbookName}"
+                        env.SONAR_FILES_TO_INCLUDE = env.SINGLE_PLAYBOOK_PATH
+                    } else {
+                        error('You need to specify one of: ROLE_ROOT_PATH or SINGLE_PLAYBOOK_PATH.')
+                    }
+                    echo "Detected Ansible object: ${testedObject}"
+                }
+            }
+        }
+        stage('Run ansible-lint') {
+            steps {
+                script {
+                    withEnv(["PATH+EXTRA=/home/jenkins/.local/bin"]) {
+                        sh 'pip3 install --upgrade pip'
+                        sh 'pip3 install ansible-core==2.14 mitogen==0.3.3 ansible-lint==6.16.*'
+                        switch (testedObject) {
+                            case 'ROLE':
+                                dir(env.ROLE_ROOT_PATH) {
+                                    // Only warn about ignore-errors rule
+                                    sh 'ansible-lint -w ignore-errors -p -v .'
+                                    recordIssues(
+                                        enabledForFailure: true,
+                                        ignoreQualityGate: true,
+                                        skipBlames: true,
+                                        skipPublishingChecks: true,
+                                        sourceDirectories: [
+                                            [path: '.']
+                                        ],
+                                        tools: [
+                                            ansibleLint(skipSymbolicLinks: true)
+                                        ]
+                                    )
+                                }
+                                break
+                            case 'SINGLE_PLAYBOOK':
+                                // Only warn about ignore-errors rule
+                                sh 'ansible-lint -w ignore-errors -p -v ${SINGLE_PLAYBOOK_PATH}'
+                                recordIssues(
+                                    enabledForFailure: true,
+                                    ignoreQualityGate: true,
+                                    skipBlames: true,
+                                    skipPublishingChecks: true,
+                                    sourceDirectories: [
+                                        [path: env.SINGLE_PLAYBOOK_PATH]
+                                    ],
+                                    tools: [
+                                        ansibleLint(skipSymbolicLinks: true)
+                                    ]
+                                )
+                            default:
+                                error('No object passed to be tested in SonarQube')
+                        }
+                    }
+                }
+            }
+        }
+        stage('Run Sonarqube analysis') {
+            steps {
+                script {
+                    def scannerHome = tool('sonarqube_scanner_default')
+                    def nodeHome = tool('nodejs_default')
+                    withEnv(["PATH+EXTRA=${scannerHome}/bin:${nodeHome}/bin"]) {
+                        withSonarQubeEnv('sonarqube_default') {
+                            sh('sonar-scanner')
+                        }
+                        timeout(time: 10, unit: 'MINUTES') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                            } else {
+                                sonarQGStatus = qg.status
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Run tests') {
+            parallel {
+                stage('Run tests on redhat8') {
+                    steps {
+                        script {
+                            container('redhat8-ansible') {
+                                sh 'ansible-wrapper'
+                            }
+                        }
+                    }
+                }
+                stage('Run tests on ubuntu') {
+                    steps {
+                        script {
+                            container('ubuntu-ansible') {
+                                sh 'ansible-wrapper'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
