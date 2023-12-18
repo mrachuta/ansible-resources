@@ -1,6 +1,6 @@
 - name: Provision node-exporter
-  hosts: "{{ target_hosts }}"
-  become: yes
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
   pre_tasks:
 
     - name: Create node_exporter cert dir
@@ -9,14 +9,15 @@
         state: directory
         owner: root
         group: root
+        mode: "0644"
 
     - name: Copy certs
       copy:
         src: "resources/node_exporter/{{ item }}"
         dest: "/etc/node_exporter/{{ item | basename }}"
         owner: root
-        group: root
-        mode: 700
+        group: node-exp
+        mode: "0740"
       loop:
         - "{{ inventory_hostname }}/{{ inventory_hostname }}.crt"
         - "{{ inventory_hostname }}/{{ inventory_hostname }}.key"

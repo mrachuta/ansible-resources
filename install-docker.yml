@@ -1,36 +1,37 @@
 - name: Docker installation & initial configuration
-  hosts: "{{ target_hosts }}"
+  hosts: "{{ target_hosts | default('all') }}"
   vars_files:
     - vars/external-vars.yml
-  become: yes
+  become: true
   tasks:
 
     - name: Add docker repository to package manager (specific - CentOS/RHEL/OracleLinux)
       get_url:
         url: https://download.docker.com/linux/centos/docker-ce.repo
         dest: /etc/yum.repos.d/docker-ce.repo
-      when: > 
-            ansible_distribution == 'CentOS' or 
+        mode: '0755'
+      when: >
+            ansible_distribution == 'CentOS' or
             ansible_distribution == 'RedHat' or
             ansible_distribution == 'OracleLinux'
 
     - name: Add GPG key for docker repository (specific - Ubuntu/Debian)
       apt_key:
-        url: https://download.docker.com/linux/{{ ansible_distribution|lower }}/gpg
+        url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
         state: present
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
     - name: Add docker repository to package manager (specific - Ubuntu/Debian)
       apt_repository:
-        repo: deb https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable
+        repo: deb https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release | lower }} stable
         state: present
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
-    
+
     - name: Install Docker and required packages
       package:
         name:
-          - docker-ce 
-          - docker-ce-cli 
+          - docker-ce
+          - docker-ce-cli
           - containerd.io
         state: latest
 
@@ -49,18 +50,19 @@
       user:
         name: '{{ new_user }}'
         groups: docker
-        append: yes
+        append: true
 
     - name: Install docker-compose
       get_url:
         url: https://github.com/docker/compose/releases/download/{{ compose_version }}/docker-compose-linux-{{ ansible_architecture }}
         dest: /usr/local/bin/docker-compose
         mode: '0755'
-    
+
     - name: Add bash-completion for docker-compose
       get_url:
         url: https://raw.githubusercontent.com/docker/compose/{{ compose_version }}/contrib/completion/bash/docker-compose
         dest: /etc/bash_completion.d/docker-compose
+        mode: '0755'
 
     - name: Configure docker - create dir
       file:
@@ -71,7 +73,8 @@
     - name: Configure docker - create config
       copy:
         dest: /etc/docker/daemon.json
-        force: no
+        force: true
+        mode: '0755'
         content: |
           {
             "log-driver": "json-file",
@@ -86,7 +89,7 @@
     - name: Enable service docker if not enabled
       service:
         name: docker
-        enabled: yes
+        enabled: true
 
     - name: Reload service docker, to apply configuration
       service:
