@@ -1,8 +1,8 @@
 - name: Create NFS share
-  hosts: "{{ target_hosts }}"
+  hosts: "{{ target_hosts | default('all') }}"
   vars_files:
     - vars/external-vars.yml
-  become: yes
+  become: true
   tasks:
 
     - name: Clean dnf/yum cache (specific - CentOS/RHEL)
@@ -12,15 +12,15 @@
       when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
     - name: Update package DB (specific - CentOS/RHEL)
-      yum: 
-        list: updates 
-        update_cache: yes 
+      yum:
+        list: updates
+        update_cache: true
       when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
     - name: Update package DB (specific - Ubuntu/Debian)
-      apt: 
-        update_cache: yes 
-        force_apt_get: yes 
+      apt:
+        update_cache: true
+        force_apt_get: true
         cache_valid_time: 3600
       when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
@@ -45,7 +45,7 @@
     - name: Enable services (specific - CentOS/RHEL)
       service:
         name: "{{ item }}"
-        enabled: yes
+        enabled: true
       with_items:
         - rpcbind
         - nfslock
@@ -55,7 +55,7 @@
     - name: Enable services (specific - Ubuntu/Debian)
       service:
         name: "{{ item }}"
-        enabled: yes
+        enabled: true
       with_items:
         - rpcbind
         - nfs-kernel-server
@@ -71,7 +71,7 @@
         vg: nfsvg1
         lv: nfslv1
         size: 100%FREE
-        shrink: no   
+        shrink: false
 
     - name: Format partition
       filesystem:
@@ -82,6 +82,7 @@
       file:
         path: /exports/nfslv1
         state: directory
+        mode: '0777'
 
     - name: Mount device
       mount:
@@ -97,7 +98,7 @@
         line: "{{ item }}"
       with_items:
         - '/exports/nfslv1  192.168.0.0/24(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)'
-    
+
     # Issues with owner 777 after mount fixed by re-set
     - name: Re-set permissions on mountpoint
       file:

@@ -1,15 +1,15 @@
 - name: Install OpenVPN server
-  hosts: "{{ target_hosts }}"
+  hosts: "{{ target_hosts | default('all') }}"
   vars_files:
     - vars/external-vars.yml
-  become: yes
+  become: true
   tasks:
 
     - name: Clone git repo with OpenVPN installer
       ansible.builtin.git:
         repo: https://github.com/angristan/openvpn-install.git
         dest: /tmp/openvpn-install
-        force: yes
+        force: true
 
     - name: Replace IP address space
       ansible.builtin.replace:
@@ -19,7 +19,7 @@
 
     - name: Run shell script
       # Old convention used because of issues with setting env variables
-      shell: | 
+      shell: |
           chmod +x /tmp/openvpn-install/openvpn-install.sh
           /tmp/openvpn-install/openvpn-install.sh
       environment:
@@ -37,10 +37,10 @@
         CLIENT: client-001
         PASS: 1
       args:
-        warn: no
+        warn: false
 
     - name: Download certificate for client-001
       ansible.builtin.fetch:
         src: /home/{{ technical_user }}/client-001.ovpn
         dest: downloads/client-001.ovpn
-        flat: yes
+        flat: true

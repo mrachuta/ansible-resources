@@ -28,14 +28,22 @@ Playbook is installing docker & docker compose with additional customizations:
 
 ## create-nfs-share
 Playbook creates a nfs-share:
-- install necessary packages,
+- basing on external role,
+  - install role:
+    ```
+    ansible-galaxy collection install ansible.posix
+    ```
 - create vg and lv from already attached pv,
 - mount new volume an add entry to /etc/fstab,
 - create exports
 
 ## mount-nfs-share
 Playbook mounts existing nfs-share:
-- install necessary packages,
+- basing on external role,
+  - install role:
+    ```
+    ansible-galaxy collection install ansible.posix
+    ```
 - mount nfs an add entry to /etc/fstab
 
 ## install-openvpn-server
