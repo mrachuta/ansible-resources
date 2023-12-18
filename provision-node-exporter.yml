@@ -1,5 +1,5 @@
 - name: Provision node-exporter
-  hosts: "{{ target_hosts }}"
+  hosts: "{{ target_hosts | default('all') }}"
   vars_files:
     - vars/external-vars.yml
   become: yes
@@ -14,11 +14,11 @@
 
     - name: Copy certs
       copy:
-        src: resources/node_exporter/
+        src: resources/node_exporter/{{ inventory_hostname }}/
         dest: /etc/node_exporter/
         owner: root
         group: root
         mode: 700
 
   roles:
-    - cloudalchemy.node_exporter
+    - prometheus.prometheus.node_exporter

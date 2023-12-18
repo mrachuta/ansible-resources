@@ -3,6 +3,7 @@
 Ansible playbooks written for my own purposes & training.
 
 ## Table of contents
+- [Project name](#project-name)
 - [Table of contents](#table-of-contents)
 - [General info](#general-info)
 - [install-docker](#install-docker)
@@ -10,8 +11,8 @@ Ansible playbooks written for my own purposes & training.
 - [mount-nfs-share](#mount-nfs-share)
 - [install-openvpn-server](#install-openvpn-server)
 - [provision-node-exporter](#provision-node-exporter)
-- [role: vm_configuration](#role-vm_configuration)
-- [role: bash_customization](#role-bash_customization)
+- [role: vm\_configuration](#role-vm_configuration)
+- [role: bash\_customization](#role-bash_customization)
 ## General info
 
 Repo contains ansible playbooks and roles used for automate tasks on virtual machines.
@@ -45,6 +46,10 @@ Playbok that setup Openvpn server,
 ## provision-node-exporter
 Playbook that creates a service node-exporter to provide metrics,
 - basing on external role,
+  - install role:
+    ```
+    ansible-galaxy collection install prometheus.prometheus
+    ```
 - customizations added (TLS)
 
 ## role: vm_configuration

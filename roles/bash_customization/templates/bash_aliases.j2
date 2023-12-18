@@ -61,5 +61,4 @@ alias p="podman"
 alias tfm="terraform"
 alias kns="kubectl config set-context --current --namespace "
 alias kctx="kubectl config use-context "
-#alias ktoken="kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | awk '/^deployment-controller-token-/{print $1}') | grep -Po 'token:\s*\K.*' | xclip -selection c"
 # End of aliases list
