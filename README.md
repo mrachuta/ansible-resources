@@ -46,6 +46,10 @@ Playbok sets-up Openvpn server:
 ## provision-node-exporter
 Playbook creates a service node-exporter to provide metrics:
 - basing on external role,
+  - install role:
+    ```
+    ansible-galaxy collection install prometheus.prometheus
+    ```
 - customizations added (TLS)
 
 ## role: vm_configuration
