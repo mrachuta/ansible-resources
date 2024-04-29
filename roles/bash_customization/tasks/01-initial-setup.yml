@@ -31,6 +31,7 @@
 
     - name: "[01.04] Enable bash-completion for kubectl"
       ansible.builtin.shell: |
+        set -o pipefail
         kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
       args:
         creates: /etc/bash_completion.d/kubectl

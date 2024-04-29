@@ -16,7 +16,7 @@
     - name: "[01.02] Add EPEL repo key - RHEL"
       ansible.builtin.rpm_key:
         state: present
-        key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version  }}"
+        key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
       when: ansible_distribution == 'RedHat'
       tags:
         - always
@@ -25,7 +25,7 @@
 
     - name: "[01.03] Enable EPEL repo - RHEL"
       ansible.builtin.dnf:
-        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version  }}.noarch.rpm"
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
         state: present
       when: ansible_distribution == 'RedHat'
       tags:

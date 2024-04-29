@@ -4,5 +4,11 @@
   # Force linear strategy to make playbook more stable
   strategy: linear
   become: true
+  pre_tasks:
+    - name: "Create user for test purposes"
+      ansible.builtin.user:
+        name: "{{ default_user }}"
+        shell: /bin/bash
+        state: present
   roles:
     - ../../bash_customization

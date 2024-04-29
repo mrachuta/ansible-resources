@@ -1,4 +1,6 @@
 galaxy_info:
+  role_name: vm_configuration
+  namespace: mrachuta
   author: "Mateusz Rachuta"
   description: "Role to configure new VMs"
   company: ""
