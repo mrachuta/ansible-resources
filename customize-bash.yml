@@ -1,0 +1,9 @@
+- name: "Run role bash_customization"
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  roles:
+      - role: bash_customization
+
+# Example run:
+# ansible-playbook -i inventory/ -i vars/ -e "target_hosts=myhost" -e "default_user=myuser" \
+# customize-bash.yml --skip-tags bac.configure-bashrc

@@ -6,12 +6,13 @@ execute pathogen#infect()
 syntax on
 filetype plugin indent on
 
-" Set color scheme
+" Set scheme 
+colorscheme {{ default_theme_raw | basename | splitext | first }}
+
+" Set color scheme params (just for one specific)
 " https://github.com/fmoralesc/molokayo
 " In case of problems with colours, uncomment
 " set t_Co=256
-" Set scheme to molokai
-colorscheme molokai
 
 " New leader key
 let mapleader=","
@@ -39,9 +40,6 @@ let g:rainbow_active = 1
 
 " https://github.com/martinda/Jenkinsfile-vim-syntax
 " https://github.com/ekalinin/Dockerfile.vim
-
-" https://github.com/vim-python/python-syntax
-let python_highlight_all = 1
 
 " https://github.com/preservim/nerdcommenter
 

@@ -51,7 +51,6 @@
         - bac.initial-setup
         - bac.01.05
 
-
     - name: "[01.06]  Create symlink if 'python3' command not exists"
       ansible.builtin.file:
         src: "/usr/bin/python3.{{ ansible_facts.python.version.micro }}"
