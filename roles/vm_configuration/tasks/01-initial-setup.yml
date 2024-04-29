@@ -104,6 +104,7 @@
         gpgcheck: true
         enabled: true
         gpgkey: "{{ item.yum_gpg_url }}"
+        exclude: "{{ item.yum_excludes }}"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
       tags:

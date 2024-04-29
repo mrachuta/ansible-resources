@@ -29,14 +29,9 @@ packages_to_install:
   - "python3-setuptools"
   - "tmux"
   - "lsof"
-  # Debian-specific packages
   - "iputils"
   - "lm_sensors"
   - "cronie"
-  # Redhat-specific versions
-  - "iputils-ping"
-  - "lm-sensors"
-  - "cron"
   # kubectl packages
   - "apt-transport-https"
   - "ca-certificates"
@@ -50,22 +45,26 @@ packages_to_install:
 
 repo_list:
   - name: "kubernetes"
-    apt_repo_url: "https://apt.kubernetes.io/ kubernetes-xenial main"
-    apt_gpg_url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
-    yum_repo_url: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch"
-    yum_gpg_url: "https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg"
+    apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
+    apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key"
+    yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/"
+    yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key"
+    yum_excludes: '"kubelet kubeadm kubectl cri-tools kubernetes-cni"'
   - name: "vscode"
     apt_repo_url: "https://packages.microsoft.com/repos/code stable main"
     apt_gpg_url: "https://packages.microsoft.com/keys/microsoft.asc"
     yum_repo_url: "https://packages.microsoft.com/yumrepos/vscode"
     yum_gpg_url: "https://packages.microsoft.com/keys/microsoft.asc"
+    yum_excludes: '""'
   - name: "hasihcorp"
     apt_repo_url: "https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
     apt_gpg_url: "https://apt.releases.hashicorp.com/gpg"
     yum_repo_url: "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"
     yum_gpg_url: "https://rpm.releases.hashicorp.com/gpg"
+    yum_excludes: '""'
   - name: "helm"
     apt_repo_url: "https://baltocdn.com/helm/stable/debian/ all main"
     apt_gpg_url: "https://baltocdn.com/helm/signing.asc"
     yum_repo_url: ""
     yum_gpg_url: ""
+    yum_excludes: ""
