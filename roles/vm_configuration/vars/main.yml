@@ -14,34 +14,36 @@ architecture_map:
     "armhf"
 
 packages_to_install:
-  # Common packages
-  - "sudo"
-  - "tar"
-  - "vim"
-  - "htop"
-  - "traceroute"
-  - "net-tools"
-  - "git"
-  - "wget"
-  - "ufw"
-  - "bash-completion"
-  - "python3-pip"
-  - "python3-setuptools"
-  - "tmux"
-  - "lsof"
-  - "iputils"
-  - "lm_sensors"
-  - "cronie"
-  # kubectl packages
-  - "apt-transport-https"
-  - "ca-certificates"
-  - "curl"
-  - "gnupg-agent"
-  - "software-properties-common"
-  # podman
-  - podman
-  # kubectl
-  - kubectl
+  common:
+    - "sudo"
+    - "tar"
+    - "vim"
+    - "htop"
+    - "traceroute"
+    - "net-tools"
+    - "git"
+    - "wget"
+    - "ufw"
+    - "bash-completion"
+    - "python3-pip"
+    - "python3-setuptools"
+    - "tmux"
+    - "lsof"
+    - "curl"
+    - "ca-certificates"
+    - "kubectl"
+    - "podman"
+  redhat:
+    - "iputils"
+    - "lm_sensors"
+    - "cronie"
+  debian:
+    - "iputils-ping"
+    - "lm-sensors"
+    - "cron"
+    - "apt-transport-https"
+    - "gnupg-agent"
+    - "software-properties-common"
 
 repo_list:
   - name: "kubernetes"
@@ -49,7 +51,7 @@ repo_list:
     apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key"
     yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/"
     yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key"
-    yum_excludes: '"kubelet kubeadm kubectl cri-tools kubernetes-cni"'
+    yum_excludes: '"kubelet kubeadm cri-tools kubernetes-cni"'
   - name: "vscode"
     apt_repo_url: "https://packages.microsoft.com/repos/code stable main"
     apt_gpg_url: "https://packages.microsoft.com/keys/microsoft.asc"
