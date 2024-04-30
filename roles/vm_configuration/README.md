@@ -115,7 +115,7 @@ Role requires following collections to be installed before launching the role:
 ```
 - name: "Run role"
   hosts: servers
-  become: True
+  become: true
   roles:
       - role: vm_configuration
 ```

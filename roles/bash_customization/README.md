@@ -43,7 +43,7 @@ Description: color from bash 256color table to use as background for hostname in
 ```
 - name: "Run role"
   hosts: servers
-  become: True
+  become: true
   roles:
       - role: bash_customization
 ```

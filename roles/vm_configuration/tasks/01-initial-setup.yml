@@ -104,6 +104,7 @@
         gpgcheck: true
         enabled: true
         gpgkey: "{{ item.yum_gpg_url }}"
+        exclude: "{{ item.yum_excludes }}"
       loop: "{{ repo_list }}"
       when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
       tags:
@@ -111,38 +112,58 @@
         - vmc.initial-setup
         - vmc.01.09
 
-- name: "[01.10] Install required packages"
+- name: "[01.10] Install required packages - common"
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
-  # Ignore errors for OS-specific packages
-  ignore_errors: true
-  loop: "{{ packages_to_install }}"
+  loop: "{{ packages_to_install.common }}"
   tags:
     - always
     - vmc.initial-setup
     - vmc.01.10
 
-- name: "[01.11] Install virtualenvwrapper"
-  ansible.builtin.pip:
-    name: "virtualenvwrapper"
+- name: "[01.11] Install required packages - RHEL family"
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages_to_install.redhat }}"
+  when: ansible_os_family == 'RedHat'
   tags:
     - always
     - vmc.initial-setup
     - vmc.01.11
 
+- name: "[01.12] Install required packages - Debian family"
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages_to_install.debian }}"
+  when: ansible_os_family == 'Debian'
+  tags:
+    - always
+    - vmc.initial-setup
+    - vmc.01.12
+
+- name: "[01.13] Install virtualenvwrapper"
+  ansible.builtin.pip:
+    name: "virtualenvwrapper"
+  tags:
+    - always
+    - vmc.initial-setup
+    - vmc.01.13
+
 - name: "Ensure 'python3' command"
   block:
-    - name: "[01.12] Check if /usr/bin/python3 exists"
+    - name: "[01.14] Check if /usr/bin/python3 exists"
       ansible.builtin.stat:
         path: "/usr/bin/python3"
       register: python3_command
       tags:
         - always
         - vmc.initial-setup
-        - vmc.01.12
+        - vmc.01.14
 
-    - name: "[01.13] Create symlink if 'python3' command not exists"
+    - name: "[01.15] Create symlink if 'python3' command not exists"
       ansible.builtin.file:
         src: "/usr/bin/python3.{{ ansible_facts.python.version.micro }}"
         dest: "/usr/bin/python3"
@@ -151,4 +172,4 @@
       tags:
         - always
         - vmc.initial-setup
-        - vmc.01.13
+        - vmc.01.15
