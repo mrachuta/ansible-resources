@@ -62,3 +62,16 @@
     - always
     - bac.configure-vim
     - bac.04.05
+
+- name: "[04.06] Update ownership to .vim directory"
+  ansible.builtin.file:
+    path: /home/{{ default_user }}/.vim
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0775"
+    state: directory
+    recurse: true
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.04.06

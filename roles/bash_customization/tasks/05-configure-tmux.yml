@@ -1,5 +1,29 @@
 ---
-- name: "[05.01] Copy tmux config template"
+
+- name: "[05.01] Install required resources"
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - cmake
+    - python-setuptools
+  tags:
+    - always
+    - bac.configure-tmux
+    - bac.05.01
+
+- name: "[05.02] Pull required vim addons from github"
+  ansible.builtin.git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: "/home/{{ default_user }}/.tmux/plugins/tpm"
+    recursive: true
+    version: master
+  tags:
+    - always
+    - bac.configure-tmux
+    - bac.05.02
+
+- name: "[05.03] Copy tmux config template"
   ansible.builtin.template:
     src: "templates/tmux.conf.j2"
     dest: "/home/{{ default_user }}/.tmux.conf"
@@ -9,4 +33,17 @@
   tags:
     - always
     - bac.configure-tmux
-    - bac.05.01
+    - bac.05.03
+
+- name: "[05.04] Update ownership to .tmux directory"
+  ansible.builtin.file:
+    path: /home/{{ default_user }}/.tmux
+    owner: "{{ default_user }}"
+    group: "{{ default_group }}"
+    mode: "0775"
+    state: directory
+    recurse: true
+  tags:
+    - always
+    - bac.configure-vim
+    - bac.05.04
