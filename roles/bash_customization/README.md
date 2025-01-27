@@ -38,6 +38,10 @@ Description: color from bash 256color table to use as background for hostname in
 
 `remote_user` should be able to perfom commands with root privileges.
 
+## Additional information
+
+To install all tmux plugins hit CTRL + B + I in tmux, then restart your session.
+
 ## Example Playbook
 
 ```
@@ -49,6 +53,5 @@ Description: color from bash 256color table to use as background for hostname in
 ```
 
 ## License
-
 
 Apache-2.0
