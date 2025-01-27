@@ -110,6 +110,10 @@ Role requires following collections to be installed before launching the role:
   - *ansible.posix*
   - *devsec.hardening*
 
+## Additional information
+
+Nothing.
+
 ## Example Playbook
 
 ```
