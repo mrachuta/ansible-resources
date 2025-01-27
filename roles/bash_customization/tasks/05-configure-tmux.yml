@@ -12,7 +12,7 @@
     - bac.configure-tmux
     - bac.05.01
 
-- name: "[05.02] Pull required vim addons from github"
+- name: "[05.02] Pull required tmux addons from github"
   ansible.builtin.git:
     repo: https://github.com/tmux-plugins/tpm
     dest: "/home/{{ default_user }}/.tmux/plugins/tpm"
