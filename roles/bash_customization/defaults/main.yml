@@ -1,6 +1,7 @@
 ---
-default_user: "testuser"
-default_group: "{{ default_user }}"
+bash_customization_default_user: "testuser"
+bash_customization_default_group: "{{ bash_customization_default_user }}"
 # Set value if you don't want to generate random one
 # https://www.ditig.com/256-colors-cheat-sheet
-bash_hostname_color: ""
+bash_customization_bash_hostname_color: ""
+bash_customization_bash_aliases_additional_entries: null
