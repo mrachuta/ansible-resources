@@ -7,3 +7,8 @@
 # Example run:
 # ansible-playbook -i inventory/ -i vars/ -e "target_hosts=myhost" -e "default_user=myuser" \
 # customize-bash.yml --skip-tags bac.configure-bashrc
+#
+# Example run against localhost:
+# ansible-playbook configure-vm.yml \
+# -e "target_hosts=localhost" \
+# --connection=local --skip-tags="vmc.configure-sshd"

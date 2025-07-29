@@ -49,16 +49,12 @@ case "$TERM" in
 esac
 
 # Setting for virtualenvwrapper
-# For CentOS
-# HINT: can link pythonX to python: sudo ln -s /usr/bin/python3 /usr/bin/python
-# export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3.6
-# For Other OS
 export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
 export WORKON_HOME=~/python_envs
 # If installed with --user
-# source /home/$USER/.local/bin/virtualenvwrapper.sh
+source /home/$USER/.local/bin/virtualenvwrapper.sh
 # If installed globally
-source /usr/local/bin/virtualenvwrapper.sh
+# source /usr/local/bin/virtualenvwrapper.sh
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
@@ -79,7 +75,7 @@ D_DEFAULT_COLOR="\e[39m"
 D_INTERMEDIATE_COLOR="\e[37m"
 D_USER_COLOR="\e[36m"
 # 256 colors
-D_MACHINE_COLOR="\e[30;48;5;{% if 'bash_hostname_color' is defined and bash_hostname_color|length > 0 %}{{ bash_hostname_color }}{% else %}{{ machine_color.stdout }}{% endif %}m"
+D_MACHINE_COLOR="\e[30;48;5;{% if 'bash_customization_bash_hostname_color' is defined and bash_customization_bash_hostname_color|length > 0 %}{{ bash_customization_bash_hostname_color }}{% else %}{{ machine_color.stdout }}{% endif %}m"
 # 256 colors
 D_DIR_COLOR="\e[38;5;202m"
 D_GIT_COLOR="\e[90m"
