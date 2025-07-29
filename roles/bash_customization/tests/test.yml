@@ -7,8 +7,9 @@
   pre_tasks:
     - name: "Create user for test purposes"
       ansible.builtin.user:
-        name: "{{ default_user }}"
+        name: "{{ bash_customization_default_user }}"
         shell: /bin/bash
         state: present
+
   roles:
     - ../../bash_customization

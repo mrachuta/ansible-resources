@@ -3,7 +3,7 @@
   ansible.builtin.package:
     name: "{{ item }}"
     state: present
-  loop: "{{ packages_to_install }}"
+  loop: "{{ bash_customization_packages_to_install }}"
   tags:
     - always
     - bac.initial-setup
@@ -12,6 +12,7 @@
 - name: "[01.02] Install virtualenvwrapper"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
+    extra_args: --user
   tags:
     - always
     - bac.initial-setup
@@ -20,9 +21,9 @@
 - name: "Enable bash-completion for kubectl if exists"
   block:
     - name: "[01.03] Check if kubectl command exists"
-      ansible.builtin.command: command -v kubectl
+      ansible.builtin.command: bash -c 'command -v kubectl'
       register: kubectl_exists
-      failed_when: false
+      failed_when: '"No such" in kubectl_exists.stderr'
       changed_when: false
       tags:
         - always
@@ -30,12 +31,13 @@
         - bac.01.03
 
     - name: "[01.04] Enable bash-completion for kubectl"
+      when: kubectl_exists.rc == 0
       ansible.builtin.shell: |
         set -o pipefail
         kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
       args:
         creates: /etc/bash_completion.d/kubectl
-      when: kubectl_exists.rc == 0
+        executable: /bin/bash
       tags:
         - always
         - bac.initial-setup
@@ -53,11 +55,11 @@
         - bac.01.05
 
     - name: "[01.06]  Create symlink if 'python3' command not exists"
+      when: not python3_command.stat.exists
       ansible.builtin.file:
         src: "/usr/bin/python3.{{ ansible_facts.python.version.micro }}"
         dest: "/usr/bin/python3"
         state: link
-      when: not python3_command.stat.exists
       tags:
         - always
         - bac.initial-setup
