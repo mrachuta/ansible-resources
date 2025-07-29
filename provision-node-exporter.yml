@@ -2,20 +2,55 @@
   hosts: "{{ target_hosts | default('all') }}"
   become: true
   pre_tasks:
+    - name: "Gather system user and group facts"
+      ansible.builtin.getent:
+        database: "{{ item }}"
+      loop:
+        - passwd
+        - group
+
+    - name: "Create system group node-exp"
+      when: "'node-exp' not in ansible_facts.getent_group"
+      ansible.builtin.group:
+        name: "node-exp"
+        system: true
+        state: present
+      become: true
+
+    - name: "Create system user node-exp"
+      when: "'node-exp' not in ansible_facts.getent_passwd"
+      ansible.builtin.user:
+        name: "node-exp"
+        system: true
+        shell: "/usr/sbin/nologin"
+        group: "node-exp"
+        home: "/"
+        create_home: false
+      become: true
+
+    - name: Ensure /var/lib/node_exporter/textfile_collector" exists
+      ansible.builtin.file:
+        path: "/var/lib/node_exporter/textfile_collector"
+        state: directory
+        owner: node-exp
+        group: node-exp
+        mode: "0775"
 
     - name: Create node_exporter cert dir
+      when: "'kubernetes' not in group_names"
       ansible.builtin.file:
         path: "/etc/node_exporter"
         state: directory
-        owner: root
-        group: root
-        mode: "0644"
+        owner: node-exp
+        group: node-exp
+        mode: "0775"
 
     - name: Copy certs
+      when: "'kubernetes' not in group_names"
       ansible.builtin.copy:
         src: "resources/node_exporter/{{ item }}"
         dest: "/etc/node_exporter/{{ item | basename }}"
-        owner: root
+        owner: node-exp
         group: node-exp
         mode: "0740"
       loop:
@@ -23,4 +58,26 @@
         - "{{ inventory_hostname }}/{{ inventory_hostname }}.key"
 
   roles:
-    - prometheus.prometheus.node_exporter
+    - role: prometheus.prometheus.node_exporter
+      when: "'kubernetes' not in group_names"
+      node_exporter_textfile_dir: "/var/lib/node_exporter/textfile_collector"
+
+  tasks:
+    - name: Copy script to generate node_os_updates metrics to remote
+      ansible.builtin.copy:
+        src: files/node_os_updates_metrics.sh
+        dest: /var/lib/node_exporter/node_os_updates_metrics.sh
+        owner: node-exp
+        group: node-exp
+        mode: '0740'
+
+    - name: Create a cron entry to run script periodically
+      ansible.builtin.cron:
+        name: "Post node_os_updates metrics"
+        minute: "0"
+        hour: "*/4"
+        day: "*"
+        month: "*"
+        weekday: "*"
+        job: "/var/lib/node_exporter/node_os_updates_metrics.sh"
+        user: root

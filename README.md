@@ -21,6 +21,7 @@ Playbook creates a service node-exporter to provide metrics:
     ansible-galaxy collection install prometheus.prometheus
     ```
 - customizations added (TLS)
+- ability to provision script that generates metrics related to pending host os updates
 
 ## role: vm_configuration
 Role performs basic configuration on VM:
