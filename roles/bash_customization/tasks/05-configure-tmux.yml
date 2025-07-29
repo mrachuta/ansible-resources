@@ -1,12 +1,12 @@
 ---
-
-- name: "[05.01] Install required resources"
-  ansible.builtin.package:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - cmake
-    - python-setuptools
+- name: "[05.01] Create tmux plugins dir"
+  ansible.builtin.file:
+    path: "/home/{{ bash_customization_default_user }}/.tmux/plugins"
+    state: directory
+    mode: '0750'
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    recurse: true
   tags:
     - always
     - bac.configure-tmux
@@ -15,9 +15,13 @@
 - name: "[05.02] Pull required tmux addons from github"
   ansible.builtin.git:
     repo: https://github.com/tmux-plugins/tpm
-    dest: "/home/{{ default_user }}/.tmux/plugins/tpm"
+    dest: "/home/{{ bash_customization_default_user }}/.tmux/plugins/tpm"
     recursive: true
     version: master
+    # Ensure that during next run there will be no errors with local changes
+    force: true
+    depth: 1
+    single_branch: true
   tags:
     - always
     - bac.configure-tmux
@@ -26,9 +30,9 @@
 - name: "[05.03] Copy tmux config template"
   ansible.builtin.template:
     src: "templates/tmux.conf.j2"
-    dest: "/home/{{ default_user }}/.tmux.conf"
-    owner: "{{ default_user }}"
-    group: "{{ default_group }}"
+    dest: "/home/{{ bash_customization_default_user }}/.tmux.conf"
+    owner: "{{ bash_customization_default_user }}"
+    group: "{{ bash_customization_default_group }}"
     mode: "0640"
   tags:
     - always
@@ -37,10 +41,10 @@
 
 - name: "[05.04] Update ownership to .tmux directory"
   ansible.builtin.file:
-    path: /home/{{ default_user }}/.tmux
-    owner: "{{ default_user }}"
-    group: "{{ default_group }}"
-    mode: "0775"
+    path: /home/{{ bash_customization_default_user }}/.tmux
+    owner: "{{ bash_customization_default_user }}"
+    group: "{{ bash_customization_default_group }}"
+    mode: "0750"
     state: directory
     recurse: true
   tags:
