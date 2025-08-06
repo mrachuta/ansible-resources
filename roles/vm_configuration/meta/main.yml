@@ -27,3 +27,5 @@ galaxy_info:
   galaxy_tags: []
 
 dependencies: []
+  # collections: ansible-galaxy collection install ansible.posix
+  # collections: ansible-galaxy collection install devsec.hardening

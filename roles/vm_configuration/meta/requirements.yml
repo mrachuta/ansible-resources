@@ -1,5 +1,8 @@
-# Required external resources to run role
+---
 collections:
   - name: "community.general"
+    version: 11.1.0
   - name: "ansible.posix"
+    version: 2.1.0
   - name: "devsec.hardening"
+    version: 10.3.0
