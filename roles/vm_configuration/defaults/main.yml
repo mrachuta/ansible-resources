@@ -10,7 +10,7 @@ vm_configuration_default_user: "testuser"
 vm_configuration_add_default_user_ssh_key: true
 # Set to null to skip adding key
 vm_configuration_default_user_ssh_key_path: "files/testuser_at_example_com.pub"
-vm_configuration_default_user_password_download_path: "/tmp/{{ default_user }}_{{ ansible_hostname }}_password"
+vm_configuration_default_user_password_download_path: "/tmp/{{ vm_configuration_default_user }}_{{ ansible_hostname }}_password"
 vm_configuration_add_default_user_to_sudo: true
 vm_configuration_passwordless_sudo: true
 vm_configuration_set_selinux_permissive: true
