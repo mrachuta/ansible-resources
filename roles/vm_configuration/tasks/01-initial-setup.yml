@@ -73,7 +73,7 @@
         - vmc.01.06
 
     - name: "[01.07] Run apt update"
-      when: ansible_os_family == 'Debian' and item.apt_repo_url | length > 0
+      when: ansible_os_family == 'Debian'
       ansible.builtin.apt:
         update_cache: true
       tags:
