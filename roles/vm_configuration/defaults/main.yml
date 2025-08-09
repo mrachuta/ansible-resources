@@ -42,7 +42,7 @@ vm_configuration_ssh_x11_forwarding: false
 vm_configuration_ssh_use_pam: true
 vm_configuration_ssh_gssapi_support: false
 vm_configuration_ssh_kerberos_support: true
-vm_configuration_ssh_allow_users: "{{ vm_configuration_default_user }}"
+vm_configuration_ssh_allow_users: ""
 vm_configuration_sftp_enabled: true
 vm_configuration_sshd_moduli_minimum: 2048
 vm_configuration_ssh_challengeresponseauthentication: false
