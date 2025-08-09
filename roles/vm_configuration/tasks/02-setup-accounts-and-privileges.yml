@@ -155,7 +155,7 @@
   block:
     - name: "[02.15] Save password to file"
       ansible.builtin.copy:
-        content: "{{ vm_configuration_generated_password }}"
+        content: "{{ generated_password }}"
         dest: "/tmp/{{ vm_configuration_default_user }}_password"
         mode: "0600"
       tags:
