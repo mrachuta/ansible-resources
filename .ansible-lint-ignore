@@ -1,0 +1,3 @@
+roles/vm_configuration/tasks/04-configure-sshd.yml var-naming[no-role-prefix]
+roles/vm_configuration/tests/test.yml role-name[path]
+roles/bash_customization/tests/test.yml role-name[path]
