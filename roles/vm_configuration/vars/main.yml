@@ -1,7 +1,6 @@
 ---
-apt_gpg_key_extension: "{{ item.apt_gpg_url | basename | split('.') | last | default('gpg') }}"
-
-architecture_map:
+vm_configuration_apt_gpg_key_extension: "{{ item.apt_gpg_url | basename | split('.') | last | default('gpg') }}"
+vm_configuration_architecture_map:
   "x86_64":
     "amd64"
   "aarch64":
@@ -12,8 +11,7 @@ architecture_map:
     "armhf"
   "armv7l":
     "armhf"
-
-packages_to_install:
+vm_configuration_packages_to_install:
   common:
     - "sudo"
     - "tar"
@@ -37,6 +35,7 @@ packages_to_install:
     - "iputils"
     - "lm_sensors"
     - "cronie"
+    - "gcc-c++"
   debian:
     - "iputils-ping"
     - "lm-sensors"
@@ -44,13 +43,13 @@ packages_to_install:
     - "apt-transport-https"
     - "gnupg-agent"
     - "software-properties-common"
-
-repo_list:
+    - "build-essential"
+vm_configuration_repo_list:
   - name: "kubernetes"
-    apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
-    apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key"
-    yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/"
-    yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key"
+    apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
+    apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key"
+    yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.33/rpm/"
+    yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key"
     yum_excludes: '"kubelet kubeadm cri-tools kubernetes-cni"'
   - name: "vscode"
     apt_repo_url: "https://packages.microsoft.com/repos/code stable main"
@@ -67,6 +66,7 @@ repo_list:
   - name: "helm"
     apt_repo_url: "https://baltocdn.com/helm/stable/debian/ all main"
     apt_gpg_url: "https://baltocdn.com/helm/signing.asc"
+    # Available by default in RHEL/Fedora repo
     yum_repo_url: ""
     yum_gpg_url: ""
     yum_excludes: ""

@@ -1,34 +1,63 @@
 ---
-remove_root_password: false
-
-create_default_user: true
-
-create_technical_user: true
-
-technical_user: "ans1ble"
-
-technical_user_ssh_key_path: "files/testuser_at_example_com.pub"
-
-default_user: "testuser"
-
-default_user_ssh_key_path: "files/testuser_at_example_com.pub"
-
-default_user_password_download_path: "/tmp/{{ default_user }}_{{ ansible_hostname }}_password"
-
-add_default_user_to_sudo: true
-
-passwordless_sudo: true
-
-set_selinux_permissive: true
-
-disable_system_firewall: true
-
-disable_oci_firewall: false
-
-ufw_rules:
+vm_configuration_remove_root_password: false
+vm_configuration_create_technical_user: true
+vm_configuration_create_default_user: true
+vm_configuration_technical_user: "ans1ble"
+vm_configuration_add_technical_user_ssh_key: true
+# Set to null to skip adding key
+vm_configuration_technical_user_ssh_key_path: "files/testuser_at_example_com.pub"
+vm_configuration_default_user: "testuser"
+vm_configuration_add_default_user_ssh_key: true
+# Set to null to skip adding key
+vm_configuration_default_user_ssh_key_path: "files/testuser_at_example_com.pub"
+vm_configuration_default_user_password_download_path: "/tmp/{{ vm_configuration_default_user }}_{{ ansible_hostname }}_password"
+vm_configuration_add_default_user_to_sudo: true
+vm_configuration_passwordless_sudo: true
+vm_configuration_set_selinux_permissive: true
+vm_configuration_disable_system_firewall: true
+vm_configuration_disable_oci_firewall: false
+vm_configuration_ufw_rules:
   - comment: "Allow http"
     direction: "in"
     from_ip: "any"
     proto: "tcp"
     rule: "allow"
     to_port: "80"
+vm_configuration_ssh_client_hardening: true
+vm_configuration_ssh_server_ports:
+  - 22
+vm_configuration_ssh_host_key_files:
+  - "/etc/ssh/ssh_host_rsa_key"
+  - "/etc/ssh/ssh_host_ecdsa_key"
+  - "/etc/ssh/ssh_host_ed25519_key"
+vm_configuration_ssh_host_rsa_key_size: 4096
+vm_configuration_ssh_client_alive_interval: 300
+vm_configuration_ssh_client_alive_count: 3
+vm_configuration_ssh_permit_tunnel: "no"
+vm_configuration_ssh_permit_root_login: "no"
+vm_configuration_ssh_allow_tcp_forwarding: "no"
+vm_configuration_ssh_gateway_ports: false
+vm_configuration_ssh_allow_agent_forwarding: false
+vm_configuration_ssh_x11_forwarding: false
+vm_configuration_ssh_use_pam: true
+vm_configuration_ssh_gssapi_support: false
+vm_configuration_ssh_kerberos_support: true
+vm_configuration_ssh_allow_users: ""
+vm_configuration_sftp_enabled: true
+vm_configuration_sshd_moduli_minimum: 2048
+vm_configuration_ssh_challengeresponseauthentication: false
+vm_configuration_ssh_server_password_login: false
+vm_configuration_ssh_banner: false
+vm_configuration_ssh_compression: false
+vm_configuration_ssh_login_grace_time: "30s"
+vm_configuration_ssh_max_auth_retries: 2
+vm_configuration_ssh_max_sessions: 10
+vm_configuration_ssh_server_enabled: true
+vm_configuration_ssh_server_hardening: true
+vm_configuration_ssh_use_dns: false
+vm_configuration_ssh_macs: null
+vm_configuration_ssh_kex: null
+vm_configuration_ssh_ciphers: null
+vm_configuration_sshd_log_level: VERBOSE
+vm_configuration_sshd_strict_modes: true
+vm_configuration_sshd_authenticationmethods: publickey
