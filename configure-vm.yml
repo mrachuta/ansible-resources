@@ -5,6 +5,11 @@
       - role: vm_configuration
 
 # Example run:
-# ansible-playbook -i inventory/ -i vars/ -e "target_hosts=myhost" configure-vm.yml \
-# --skip-tags vmc.setup-accounts-and-privileges \
+# ansible-playbook -i inventory/default.yml configure-vm.yml \
+# -e "target_hosts=myhosts" --skip-tags vmc.setup-accounts-and-privileges \
 # --skip-tags vmc.configure-security --skip-tags vmc.configure-sshd
+#
+# Example run against localhost:
+# ansible-playbook configure-vm.yml \
+# -e "target_hosts=localhost" \
+# --connection=local --skip-tags="vmc.configure-sshd"
