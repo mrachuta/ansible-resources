@@ -3,3 +3,9 @@ exclude_paths:
   - .azure/
   - jenkinsfiles/
   - files/
+mock_modules:
+  - ansible.posix.authorized_key
+  - community.general.ufw
+mock_roles:
+  - prometheus.prometheus.node_exporter
+  - devsec.hardening.ssh_hardening
