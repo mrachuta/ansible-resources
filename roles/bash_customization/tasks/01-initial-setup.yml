@@ -12,7 +12,7 @@
 - name: "[01.02] Install virtualenvwrapper"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
-    extra_args: --user
+    extra_args: --user --ignore-installed --force-reinstall
   tags:
     - always
     - bac.initial-setup
