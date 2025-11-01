@@ -9,8 +9,8 @@
 - name: "[03.02] Set passwordless sudo"
   when: vm_configuration_passwordless_sudo | bool
   ansible.builtin.template:
-    src: "templates/passwordless_sudo.j2"
-    dest: "/etc/sudoers.d/passwordless_sudo"
+    src: "templates/010-passwordless-sudo.j2"
+    dest: "/etc/sudoers.d/010-passwordless-sudo"
     validate: "/usr/sbin/visudo -cf %s"
     mode: "0600"
   tags:
