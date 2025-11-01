@@ -64,8 +64,8 @@ vm_configuration_repo_list:
     yum_gpg_url: "https://rpm.releases.hashicorp.com/gpg"
     yum_excludes: '""'
   - name: "helm"
-    apt_repo_url: "https://baltocdn.com/helm/stable/debian/ all main"
-    apt_gpg_url: "https://baltocdn.com/helm/signing.asc"
+    apt_repo_url: "https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
+    apt_gpg_url: "https://packages.buildkite.com/helm-linux/helm-debian/gpgkey"
     # Available by default in RHEL/Fedora repo
     yum_repo_url: ""
     yum_gpg_url: ""
