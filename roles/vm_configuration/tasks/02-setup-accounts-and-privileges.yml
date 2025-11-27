@@ -70,11 +70,12 @@
         - vmc.02.07
 
     - name: "[02.08] Set authorized key for technical user"
-      when: vm_configuration_technical_user_ssh_key_path is not none
+      when: vm_configuration_technical_user_ssh_keys_paths is not none
       ansible.posix.authorized_key:
         user: "{{ vm_configuration_technical_user }}"
         state: present
-        key: "{{ lookup('file', vm_configuration_technical_user_ssh_key_path) }}"
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ vm_configuration_technical_user_ssh_keys_paths }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
@@ -128,11 +129,12 @@
         - vmc.02.12
 
     - name: "[02.13] Set authorized key for default user"
-      when: vm_configuration_default_user_ssh_key_path is not none
+      when: vm_configuration_default_user_ssh_keys_paths is not none
       ansible.posix.authorized_key:
         user: "{{ vm_configuration_default_user }}"
         state: present
-        key: "{{ lookup('file', vm_configuration_default_user_ssh_key_path) }}"
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ vm_configuration_default_user_ssh_keys_paths }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
