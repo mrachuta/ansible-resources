@@ -15,7 +15,7 @@
   become_user: "{{ bash_customization_default_user | default(omit) }}"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
-    extra_args: '--user --ignore-installed --force-reinstall --break-system-packages'
+    extra_args: '--user --ignore-installed --force-reinstall'
   tags:
     - always
     - bac.initial-setup
