@@ -30,9 +30,9 @@
       else
         exit 2
       fi
-  register: bash_customization_selinux_script
-  changed_when: bash_customization_selinux_script.rc == 0
-  failed_when: bash_customization_selinux_script.rc not in [0,2]
+  register: vm_configuration_selinux_script
+  changed_when: vm_configuration_selinux_script.rc == 0
+  failed_when: vm_configuration_selinux_script.rc not in [0,2]
   tags:
     - always
     - vmc.configure-security
