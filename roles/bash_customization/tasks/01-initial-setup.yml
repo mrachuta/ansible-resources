@@ -10,9 +10,11 @@
     - bac.01.01
 
 - name: "[01.02] Install virtualenvwrapper"
+  # Trick to skip passing this argument
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
   ansible.builtin.pip:
     name: "virtualenvwrapper"
-    extra_args: --user --ignore-installed --force-reinstall
+    extra_args: '--user --ignore-installed --force-reinstall --break-system-packages'
   tags:
     - always
     - bac.initial-setup
