@@ -28,7 +28,7 @@
 - name: "[02.04] Generate password for default user"
   when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys()
   ansible.builtin.set_fact:
-    generated_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
+    bash_customization_generated_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
   tags:
     - always
     - vmc.setup-accounts-and-privileges
@@ -123,7 +123,7 @@
       when: vm_configuration_default_user not in getent_passwd.keys()
       ansible.builtin.user:
         name: "{{ vm_configuration_default_user }}"
-        password: "{{ generated_password | password_hash('sha512', rounds=5000) }}"
+        password: "{{ bash_customization_generated_password | password_hash('sha512', rounds=5000) }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
@@ -147,19 +147,19 @@
   become: false
   ansible.builtin.stat:
     path: "{{ vm_configuration_default_user_password_download_path }}"
-  register: password_file
+  register: bash_customization_password_file
   tags:
     - always
     - vmc.setup-accounts-and-privileges
     - vmc.02.14
 
 - name: Download file with password to local machine
-  when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys() and not password_file.stat.exists
+  when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys() and not bash_customization_password_file.stat.exists
   block:
     - name: "[02.15] Save password to file"
       delegate_to: localhost
       ansible.builtin.copy:
-        content: "{{ generated_password }}"
+        content: "{{ bash_customization_generated_password }}"
         dest: "{{ vm_configuration_default_user_password_download_path }}"
         mode: "0600"
       tags:
