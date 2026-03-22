@@ -46,10 +46,12 @@
 - name: "Add external repos"
   block:
     - name: "[01.05] Install python3-debian package"
+      # Apt instead of ansible.builtin.package to refresh cache
       when: ansible_os_family == 'Debian'
-      ansible.builtin.package:
+      ansible.builtin.apt:
         name: python3-debian
         state: present
+        update_cache: true
       tags:
         - always
         - vmc.initial-setup
@@ -129,11 +131,3 @@
     - always
     - vmc.initial-setup
     - vmc.01.11
-
-- name: "[01.12] Install virtualenvwrapper"
-  ansible.builtin.pip:
-    name: "virtualenvwrapper"
-  tags:
-    - always
-    - vmc.initial-setup
-    - vmc.01.12
