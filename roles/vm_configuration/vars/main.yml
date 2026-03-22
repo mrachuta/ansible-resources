@@ -25,6 +25,7 @@ vm_configuration_packages_to_install:
     - "bash-completion"
     - "python3-pip"
     - "python3-setuptools"
+    - "python3-passlib"
     - "tmux"
     - "lsof"
     - "curl"
