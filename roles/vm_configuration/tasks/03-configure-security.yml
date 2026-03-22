@@ -9,8 +9,8 @@
 - name: "[03.02] Set passwordless sudo"
   when: vm_configuration_passwordless_sudo | bool
   ansible.builtin.template:
-    src: "templates/passwordless_sudo.j2"
-    dest: "/etc/sudoers.d/passwordless_sudo"
+    src: "templates/010-passwordless-sudo.j2"
+    dest: "/etc/sudoers.d/010-passwordless-sudo"
     validate: "/usr/sbin/visudo -cf %s"
     mode: "0600"
   tags:
@@ -30,9 +30,9 @@
       else
         exit 2
       fi
-  register: selinuxscript
-  changed_when: selinuxscript.rc == 0
-  failed_when: selinuxscript.rc not in [0,2]
+  register: vm_configuration_selinux_script
+  changed_when: vm_configuration_selinux_script.rc == 0
+  failed_when: vm_configuration_selinux_script.rc not in [0,2]
   tags:
     - always
     - vmc.configure-security
@@ -96,6 +96,7 @@
     state: stopped
     masked: true
     enabled: false
+    daemon_reload: true
   tags:
     - always
     - vmc.configure-security
@@ -109,18 +110,8 @@
     state: stopped
     masked: true
     enabled: false
+    daemon_reload: true
   tags:
     - always
     - vmc.configure-security
     - vmc.03.09
-
-- name: "[03.10] Disable iptables"
-  when: vm_configuration_disable_oci_firewall | bool and ansible_os_family == 'Debian'
-  ansible.builtin.shell: iptables -F && netfilter-persistent save
-  register: cmdout
-  failed_when: cmdout.rc != 0
-  changed_when: cmdout.rc == 0
-  tags:
-    - always
-    - vmc.configure-security
-    - vmc.03.10

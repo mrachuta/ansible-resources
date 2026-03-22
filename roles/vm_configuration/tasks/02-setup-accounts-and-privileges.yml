@@ -28,7 +28,7 @@
 - name: "[02.04] Generate password for default user"
   when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys()
   ansible.builtin.set_fact:
-    generated_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+    vm_configuration_generated_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') }}"
   tags:
     - always
     - vmc.setup-accounts-and-privileges
@@ -42,6 +42,7 @@
         name: "{{ vm_configuration_technical_user }}"
         shell: /bin/bash
         state: present
+        password_lock: true
       tags:
         - always
         - vmc.setup-accounts-and-privileges
@@ -70,11 +71,12 @@
         - vmc.02.07
 
     - name: "[02.08] Set authorized key for technical user"
-      when: vm_configuration_technical_user_ssh_key_path is not none
+      when: vm_configuration_technical_user_ssh_keys_paths is not none
       ansible.posix.authorized_key:
         user: "{{ vm_configuration_technical_user }}"
         state: present
-        key: "{{ lookup('file', vm_configuration_technical_user_ssh_key_path) }}"
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ vm_configuration_technical_user_ssh_keys_paths }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
@@ -121,18 +123,19 @@
       when: vm_configuration_default_user not in getent_passwd.keys()
       ansible.builtin.user:
         name: "{{ vm_configuration_default_user }}"
-        password: "{{ generated_password | password_hash('sha512') }}"
+        password: "{{ vm_configuration_generated_password | password_hash('sha512', rounds=5000) }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
         - vmc.02.12
 
     - name: "[02.13] Set authorized key for default user"
-      when: vm_configuration_default_user_ssh_key_path is not none
+      when: vm_configuration_default_user_ssh_keys_paths is not none
       ansible.posix.authorized_key:
         user: "{{ vm_configuration_default_user }}"
         state: present
-        key: "{{ lookup('file', vm_configuration_default_user_ssh_key_path) }}"
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ vm_configuration_default_user_ssh_keys_paths }}"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
@@ -144,53 +147,25 @@
   become: false
   ansible.builtin.stat:
     path: "{{ vm_configuration_default_user_password_download_path }}"
-  register: password_file
+  register: vm_configuration_password_file
   tags:
     - always
     - vmc.setup-accounts-and-privileges
     - vmc.02.14
 
 - name: Download file with password to local machine
-  when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys() and not password_file.stat.exists
+  when: >
+    vm_configuration_create_default_user | bool and
+    vm_configuration_default_user not in getent_passwd.keys() and
+    not vm_configuration_password_file.stat.exists
   block:
     - name: "[02.15] Save password to file"
+      delegate_to: localhost
       ansible.builtin.copy:
-        content: "{{ generated_password }}"
-        dest: "/tmp/{{ vm_configuration_default_user }}_password"
+        content: "{{ vm_configuration_generated_password }}"
+        dest: "{{ vm_configuration_default_user_password_download_path }}"
         mode: "0600"
       tags:
         - always
         - vmc.setup-accounts-and-privileges
         - vmc.02.15
-
-    - name: "[02.16] Download file with password to local machine"
-      ansible.builtin.fetch:
-        src: /tmp/{{ vm_configuration_default_user }}_password
-        dest: "{{ vm_configuration_default_user_password_download_path }}"
-        flat: true
-      tags:
-        - always
-        - vmc.setup-accounts-and-privileges
-        - vmc.02.16
-
-    - name: "[02.17] Restrict access to password file on local machine"
-      delegate_to: localhost
-      ansible.builtin.file:
-        path: "{{ vm_configuration_default_user_password_download_path }}"
-        owner: "root"
-        group: "root"
-        mode: '0600'
-      tags:
-        - always
-        - vmc.setup-accounts-and-privileges
-        - vmc.02.17
-
-  always:
-    - name: "[02.18] Remove file with password"
-      ansible.builtin.file:
-        path: "/tmp/{{ vm_configuration_default_user }}_password"
-        state: absent
-      tags:
-        - always
-        - vmc.setup-accounts-and-privileges
-        - vmc.02.18

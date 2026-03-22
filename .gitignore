@@ -7,4 +7,5 @@
 /kubespray
 /group_vars
 /host_vars
-requirements.txt
+.ansible.cfg
+HINTS.md
