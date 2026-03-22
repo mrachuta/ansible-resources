@@ -15,10 +15,10 @@ vm_configuration_packages_to_install:
   common:
     - "sudo"
     - "tar"
+    - "unzip"
     - "vim"
     - "htop"
     - "traceroute"
-    - "net-tools"
     - "git"
     - "wget"
     - "ufw"
@@ -31,11 +31,14 @@ vm_configuration_packages_to_install:
     - "ca-certificates"
     - "kubectl"
     - "podman"
+    - "tcpdump"
+    - "mtr"
   redhat:
     - "iputils"
     - "lm_sensors"
     - "cronie"
     - "gcc-c++"
+    - "bind-utils"
   debian:
     - "iputils-ping"
     - "lm-sensors"
@@ -44,6 +47,7 @@ vm_configuration_packages_to_install:
     - "gnupg-agent"
     - "software-properties-common"
     - "build-essential"
+    - "dnsutils"
 vm_configuration_repo_list:
   - name: "kubernetes"
     apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
