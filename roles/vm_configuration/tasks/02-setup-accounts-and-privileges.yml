@@ -154,7 +154,10 @@
     - vmc.02.14
 
 - name: Download file with password to local machine
-  when: vm_configuration_create_default_user | bool and vm_configuration_default_user not in getent_passwd.keys() and not bash_customization_password_file.stat.exists
+  when: >
+    vm_configuration_create_default_user | bool and
+    vm_configuration_default_user not in getent_passwd.keys() and
+    not bash_customization_password_file.stat.exists
   block:
     - name: "[02.15] Save password to file"
       delegate_to: localhost
