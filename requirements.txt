@@ -1,12 +1,14 @@
-ansible-compat==25.6.0
-ansible-core==2.16.14
-ansible-lint==25.6.1
-cffi==1.17.1
-cryptography==44.0.0
-Jinja2==3.1.5
-MarkupSafe==3.0.2
-packaging==24.2
-pycparser==2.22
-PyYAML==6.0.2
-resolvelib==1.0.1
-black==25.1.0
+# pur
+# pip install --force-reinstall -U -r requirements.txt
+ansible-compat==25.12.0
+ansible-core==2.20.1
+ansible-lint==26.1.1
+cffi==2.0.0
+cryptography==46.0.3
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+packaging==25.0
+pycparser==2.23
+PyYAML==6.0.3
+resolvelib==1.2.1
+black==26.1.0
