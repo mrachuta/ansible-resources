@@ -1,5 +1,5 @@
 - name: Provision node-exporter
-  hosts: "{{ target_hosts | default('all') }}"
+  hosts: "{{ target_hosts | default('remote') }}"
   become: true
   pre_tasks:
     - name: "Gather system user and group facts"
