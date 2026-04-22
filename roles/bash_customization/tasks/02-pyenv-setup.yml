@@ -66,7 +66,9 @@
       eval "$(pyenv init - bash)"
     create: true
     mode: "0640"
-  when: not '# BEGIN Ansible managed pyenv block' in bash_customization_bash_profile_content.content | b64decode
+  when:
+    not bash_customization_bash_profile.stat.exists or
+    not '# BEGIN Ansible managed pyenv block' in bash_customization_bash_profile_content.content | b64decode
   tags:
     - always
     - bac.pyenv-setup
