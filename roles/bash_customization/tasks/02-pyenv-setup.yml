@@ -1,0 +1,75 @@
+---
+- name: "[02.01] Pull pyenv repository"
+  become: true
+  # Trick to skip passing this argument
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
+  ansible.builtin.git:
+    repo: "{{ bash_customization_pyenv_repository }}"
+    dest: "~/.pyenv"
+    recursive: true
+    version: "{{ bash_customization_pyenv_release }}"
+    # Ensure that during next run there will be no errors with local changes
+    force: true
+    depth: 1
+    single_branch: true
+  tags:
+    - always
+    - bac.pyenv-setup
+    - bac.02.01
+
+- name: "[02.02] Check if ~/.bash_profile exists"
+  become: true
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
+  ansible.builtin.stat:
+    path: ~/.bash_profile
+  register: bash_customization_bash_profile
+  tags:
+    - always
+    - bac.pyenv-setup
+    - bac.02.02
+
+- name: "[02.03] Create ~/.bash_profile when not exists"
+  when: not bash_customization_bash_profile.stat.exists
+  become: true
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
+  ansible.builtin.file:
+    path: ~/.bash_profile
+    state: touch
+    mode: "0640"
+  tags:
+    - always
+    - bac.pyenv-setup
+    - bac.02.03
+
+- name: "[02.04] Check if pyenv config marker is present in ~/.bash_profile"
+  become: true
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
+  ansible.builtin.slurp:
+    path: ~/.bash_profile
+  register: bash_customization_bash_profile_content
+  when: bash_customization_bash_profile.stat.exists
+  tags:
+    - always
+    - bac.pyenv-setup
+    - bac.02.04
+
+- name: "[02.05] Add pyenv config block to ~/.bash_profile if marker not present"
+  become: true
+  become_user: "{{ bash_customization_default_user | default(omit) }}"
+  ansible.builtin.blockinfile:
+    path: ~/.bash_profile
+    marker: "\n# {mark} Ansible managed pyenv block"
+    insertafter: EOF
+    block: |
+      export PYENV_ROOT="$HOME/.pyenv"
+      [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init - bash)"
+    create: true
+    mode: "0640"
+  when:
+    not bash_customization_bash_profile.stat.exists or
+    not '# BEGIN Ansible managed pyenv block' in bash_customization_bash_profile_content.content | b64decode
+  tags:
+    - always
+    - bac.pyenv-setup
+    - bac.02.05

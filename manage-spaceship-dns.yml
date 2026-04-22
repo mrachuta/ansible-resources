@@ -1,0 +1,46 @@
+---
+- name: Manage SpaceShip DNS Records via API
+  hosts: "{{ target_hosts | default('spaceship') }}"
+  gather_facts: false
+
+  tasks:
+    - name: Build and apply all DNS records
+      delegate_to: localhost
+      run_once: true
+      block:
+        - name: Initialize an empty list for DNS records
+          ansible.builtin.set_fact:
+            desired_records: []
+
+        - name: Build the list of 'A' records
+          ansible.builtin.set_fact:
+            desired_records: "{{ desired_records + [record_to_add] }}"
+          vars:
+            record_name: "{{ hostvars[item].domain_a_record | split('.' + domain_name) | first }}"
+            record_to_add:
+              type: 'A'
+              name: "{{ record_name }}"
+              address: "{{ hostvars[item].ansible_host }}"
+              ttl: 3600
+              priority: 0
+          loop: "{{ ansible_play_hosts | default([]) }}"
+          loop_control:
+            loop_var: item
+
+        - name: Print created list of records
+          when: desired_records | length > 0
+          ansible.builtin.debug:
+            var: desired_records
+
+        - name: Apply DNS changes to SpaceShip
+          when: desired_records | length > 0
+          ansible.builtin.uri:
+            url: "{{ spaceship_api_base_url }}/dns/records/{{ domain_name }}"
+            method: PUT
+            headers:
+              X-Api-Key: "{{ spaceship_api_key }}"
+              X-Api-Secret: "{{ spaceship_api_secret }}"
+            body_format: json
+            body:
+              items: "{{ desired_records }}"
+            status_code: 204

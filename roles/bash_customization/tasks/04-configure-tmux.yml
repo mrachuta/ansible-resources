@@ -1,5 +1,5 @@
 ---
-- name: "[05.01] Create tmux plugins dir"
+- name: "[04.01] Create tmux plugins dir"
   ansible.builtin.file:
     path: "/home/{{ bash_customization_default_user }}/.tmux/plugins"
     state: directory
@@ -10,9 +10,9 @@
   tags:
     - always
     - bac.configure-tmux
-    - bac.05.01
+    - bac.04.01
 
-- name: "[05.02] Pull required tmux addons from github"
+- name: "[04.02] Pull required tmux addons from github"
   ansible.builtin.git:
     repo: https://github.com/tmux-plugins/tpm
     dest: "/home/{{ bash_customization_default_user }}/.tmux/plugins/tpm"
@@ -25,9 +25,9 @@
   tags:
     - always
     - bac.configure-tmux
-    - bac.05.02
+    - bac.04.02
 
-- name: "[05.03] Copy tmux config template"
+- name: "[04.03] Copy tmux config template"
   ansible.builtin.template:
     src: "templates/tmux.conf.j2"
     dest: "/home/{{ bash_customization_default_user }}/.tmux.conf"
@@ -37,9 +37,9 @@
   tags:
     - always
     - bac.configure-tmux
-    - bac.05.03
+    - bac.04.03
 
-- name: "[05.04] Update ownership to .tmux directory"
+- name: "[04.04] Update ownership to .tmux directory"
   ansible.builtin.file:
     path: /home/{{ bash_customization_default_user }}/.tmux
     owner: "{{ bash_customization_default_user }}"
@@ -50,4 +50,4 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.05.04
+    - bac.04.04

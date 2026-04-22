@@ -1,5 +1,5 @@
 ---
-- name: "[02.01] Copy bash_aliases file"
+- name: "[03.01] Copy bash_aliases file"
   ansible.builtin.template:
     src: "templates/bash_aliases.j2"
     dest: "/home/{{ bash_customization_default_user }}/.bash_aliases"
@@ -9,4 +9,4 @@
   tags:
     - always
     - bac.configure-aliases
-    - bac.02.01
+    - bac.03.01
