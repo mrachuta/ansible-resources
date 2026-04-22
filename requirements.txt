@@ -2,12 +2,4 @@
 # pip install --force-reinstall -U -r requirements.txt
 ansible-core>=2.20.0,<2.21.0
 ansible-lint>=26.1.0,<26.2.0
-cffi>=2.0.0
-cryptography>=46.0.0,<47.0.0
-Jinja2>=3.1.6
-MarkupSafe>=3.0.0,<4.0.0
-packaging>=25.0,<26.0
-pycparser>=2.23
-PyYAML>=6.0.3
-resolvelib>=1.2.1
 black>=26.1.0,<27.0.0

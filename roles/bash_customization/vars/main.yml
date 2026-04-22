@@ -1,4 +1,7 @@
 ---
+bash_customization_default_marker: >-
+  Ansible managed, modified on {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+  by {{ ansible_user_id }} on {{ inventory_hostname }}
 bash_customization_default_theme_raw: "https://github.com/tomasr/molokai/raw/master/colors/molokai.vim"
 bash_customization_pathogen_url: "https://tpo.pe/pathogen.vim"
 bash_customization_vim_repos:
@@ -28,3 +31,5 @@ bash_customization_packages_to_install:
   - "python3-pip"
   - "python3-setuptools"
   - "cmake"
+bash_customization_pyenv_repository: https://github.com/pyenv/pyenv.git
+bash_customization_pyenv_release: master

@@ -1,5 +1,5 @@
 ---
-- name: "[04.01] Copy vimrc file"
+- name: "[05.01] Copy vimrc file"
   ansible.builtin.template:
     src: "templates/vimrc.j2"
     dest: "/home/{{ bash_customization_default_user }}/.vimrc"
@@ -9,9 +9,9 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.01
+    - bac.05.01
 
-- name: "[04.02] Create vim dirs"
+- name: "[05.02] Create vim dirs"
   ansible.builtin.file:
     path: "/home/{{ bash_customization_default_user }}/.vim/{{ item }}"
     state: directory
@@ -26,9 +26,9 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.02
+    - bac.05.02
 
-- name: "[04.03] Install pathogen"
+- name: "[05.03] Install pathogen"
   ansible.builtin.get_url:
     url: "https://tpo.pe/pathogen.vim"
     dest: "/home/{{ bash_customization_default_user }}/.vim/autoload/pathogen.vim"
@@ -38,9 +38,9 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.03
+    - bac.05.03
 
-- name: "[04.04] Install color theme"
+- name: "[05.04] Install color theme"
   ansible.builtin.get_url:
     url: "{{ bash_customization_default_theme_raw }}"
     dest: "/home/{{ bash_customization_default_user }}/.vim/colors/{{ bash_customization_default_theme_raw | basename }}"
@@ -50,9 +50,9 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.04
+    - bac.05.04
 
-- name: "[04.05] Pull required vim addons from github"
+- name: "[05.05] Pull required vim addons from github"
   ansible.builtin.git:
     repo: "{{ item.url }}"
     dest: "/home/{{ bash_customization_default_user }}/.vim/bundle/{{ (item.url | basename | split('.git'))[0] }}"
@@ -66,9 +66,9 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.05
+    - bac.05.05
 
-- name: "[04.06] Update ownership to .vim directory"
+- name: "[05.06] Update ownership to .vim directory"
   ansible.builtin.file:
     path: /home/{{ bash_customization_default_user }}/.vim
     owner: "{{ bash_customization_default_user }}"
@@ -79,4 +79,4 @@
   tags:
     - always
     - bac.configure-vim
-    - bac.04.06
+    - bac.05.06
