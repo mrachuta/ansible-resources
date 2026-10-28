@@ -7,6 +7,5 @@
     group: "{{ bash_customization_default_group }}"
     mode: "0640"
   tags:
-    - always
     - bac.configure-aliases
     - bac.03.01

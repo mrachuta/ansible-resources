@@ -1,7 +1,4 @@
 ---
-bash_customization_default_marker: >-
-  Ansible managed, modified on {{ ansible_date_time.date }} {{ ansible_date_time.time }}
-  by {{ ansible_user_id }} on {{ inventory_hostname }}
 bash_customization_default_theme_raw: "https://github.com/tomasr/molokai/raw/master/colors/molokai.vim"
 bash_customization_pathogen_url: "https://tpo.pe/pathogen.vim"
 bash_customization_vim_repos:
@@ -20,7 +17,7 @@ bash_customization_vim_repos:
   - url: "https://github.com/pangloss/vim-javascript.git"
     branch: "master"
   - url: "https://github.com/chr4/nginx.vim.git"
-    branch: "master"
+    branch: "main"
   - url: "https://github.com/Yggdroot/indentLine.git"
     branch: "master"
 bash_customization_packages_to_install:
