@@ -1,0 +1,128 @@
+---
+- name: Configure Proxmox VE nodes
+  hosts: "{{ target_hosts | default('proxmox_nodes') }}"
+  become: true
+  gather_facts: "{{ not (ansible_use_vault_for_authentication| default(false) | bool) }}"
+
+  pre_tasks:
+    - name: "Configure Vault authentication"
+      when: ansible_use_vault_for_authentication | default(false) | bool
+      ansible.builtin.include_role:
+        name: vm_vault_authentication
+      vars:
+        vm_vault_authentication_vault_secret_path: "infra/ansible"
+
+    - name: "Read root SSH public key from Vault"
+      when: ansible_use_vault_for_authentication | default(false) | bool
+      delegate_to: localhost
+      delegate_facts: true
+      run_once: true
+      become: false
+      ansible.builtin.set_fact:
+        proxmox_vault_root_ssh_public_key: >-
+          {{ lookup(
+            'community.hashi_vault.vault_kv2_get',
+            'infra/proxmox',
+            engine_mount_point='secret'
+          ).secret.root_ssh_public_key }}
+      no_log: true
+
+  tasks:
+    - name: Check whether the Proxmox enterprise Deb822 repository exists
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/pve-enterprise.sources
+      register: proxmox_enterprise_deb822_repository
+
+    - name: Disable existing Enabled field in Proxmox enterprise repository
+      when: proxmox_enterprise_deb822_repository.stat.exists
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list.d/pve-enterprise.sources
+        regexp: '^Enabled:\s*.*$'
+        replace: 'Enabled: false'
+
+    - name: Check whether the Ceph Deb822 repository exists
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/ceph.sources
+      register: proxmox_ceph_repository
+
+    - name: Read Ceph Deb822 repository configuration
+      when: proxmox_ceph_repository.stat.exists
+      ansible.builtin.slurp:
+        src: /etc/apt/sources.list.d/ceph.sources
+      register: proxmox_ceph_repository_content
+
+    - name: Disable Ceph enterprise repository
+      when:
+        - proxmox_ceph_repository.stat.exists
+        - "'enterprise.proxmox.com' in (proxmox_ceph_repository_content.content | b64decode)"
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list.d/ceph.sources
+        regexp: '^Enabled:\s*.*$'
+        replace: 'Enabled: false'
+
+    - name: Add disabled state to the Ceph enterprise repository
+      when:
+        - proxmox_ceph_repository.stat.exists
+        - "'enterprise.proxmox.com' in (proxmox_ceph_repository_content.content | b64decode)"
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list.d/ceph.sources
+        line: 'Enabled: false'
+        insertafter: EOF
+
+    - name: Configure Proxmox no-subscription repository
+      ansible.builtin.copy:
+        dest: /etc/apt/sources.list.d/proxmox.sources
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          Types: deb
+          URIs: http://download.proxmox.com/debian/pve
+          Suites: trixie
+          Components: pve-no-subscription
+          Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+
+    - name: Install locale package
+      ansible.builtin.apt:
+        name:
+          - locales
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Generate configured system locale
+      community.general.locale_gen:
+        name: "{{ proxmox_locale }}"
+        state: present
+
+    - name: Set system locale
+      ansible.builtin.copy:
+        dest: /etc/default/locale
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          LANG={{ proxmox_locale }}
+
+    - name: Set system timezone
+      community.general.timezone:
+        name: "{{ proxmox_timezone }}"
+
+    - name: Install root SSH public key from Vault
+      when:
+        - ansible_use_vault_for_authentication | default(false) | bool
+        - not ansible_check_mode
+      ansible.posix.authorized_key:
+        user: root
+        key: "{{ hostvars['localhost'].proxmox_vault_root_ssh_public_key }}"
+        state: present
+
+    - name: Install root SSH public key from local file
+      when:
+        - not (ansible_use_vault_for_authentication | default(false) | bool)
+        - not ansible_check_mode
+      ansible.posix.authorized_key:
+        user: root
+        key: "{{ lookup('file', item) }}"
+        state: present
+      loop: "{{ proxmox_root_ssh_keys_paths }}"
