@@ -1,11 +1,9 @@
 .ansible
 /inventory
 /backup
-/resources
-/*downloads
-/priv
-/kubespray
+/secrets
 /group_vars
 /host_vars
 .ansible.cfg
 HINTS.md
+.env

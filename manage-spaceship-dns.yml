@@ -3,6 +3,21 @@
   hosts: "{{ target_hosts | default('spaceship') }}"
   gather_facts: false
 
+  pre_tasks:
+
+    - name: Read Spaceship DNS credentials from Vault
+      ansible.builtin.set_fact:
+        spaceship_dns_credentials: >-
+          {{ lookup(
+            'community.hashi_vault.vault_kv2_get',
+            'infra/spaceship',
+            engine_mount_point='secret'
+          ).secret }}
+        cacheable: false
+      no_log: true
+      delegate_to: localhost
+      run_once: true
+
   tasks:
     - name: Build and apply all DNS records
       delegate_to: localhost
@@ -16,11 +31,12 @@
           ansible.builtin.set_fact:
             desired_records: "{{ desired_records + [record_to_add] }}"
           vars:
-            record_name: "{{ hostvars[item].domain_a_record | split('.' + domain_name) | first }}"
+            host_vars: "{{ hostvars[item] | default({}) }}"
+            record_name: "{{ host_vars.get('domain_a_record', '') | split('.' + domain_name) | first }}"
             record_to_add:
               type: 'A'
               name: "{{ record_name }}"
-              address: "{{ hostvars[item].ansible_host }}"
+              address: "{{ host_vars.get('ansible_host', item) }}"
               ttl: 3600
               priority: 0
           loop: "{{ ansible_play_hosts | default([]) }}"
@@ -38,8 +54,8 @@
             url: "{{ spaceship_api_base_url }}/dns/records/{{ domain_name }}"
             method: PUT
             headers:
-              X-Api-Key: "{{ spaceship_api_key }}"
-              X-Api-Secret: "{{ spaceship_api_secret }}"
+              X-Api-Key: "{{ spaceship_dns_credentials.api_key }}"
+              X-Api-Secret: "{{ spaceship_dns_credentials.api_secret }}"
             body_format: json
             body:
               items: "{{ desired_records }}"

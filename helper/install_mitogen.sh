@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xeu -o pipefail
+set -xeuo pipefail
 
 # Define mitogen version
 MITOGEN_VERSION='0.3.37'

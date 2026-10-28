@@ -1,0 +1,328 @@
+---
+- name: Provision HashiCorp Vault
+  hosts: "{{ target_hosts | default('vault_nodes') }}"
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: Restart Vault
+      when: not ansible_check_mode
+      ansible.builtin.systemd:
+        name: vault
+        state: restarted
+        daemon_reload: true
+
+  pre_tasks:
+    - name: Ensure local secrets directory exists
+      ansible.builtin.file:
+        path: "{{ vault_local_created_secrets_dir }}"
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Install HashiCorp Vault
+      ansible.builtin.apt:
+        name: "vault={{ vault_package_version }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        allow_downgrade: true
+
+  tasks:
+    - name: Create Vault system group
+      ansible.builtin.group:
+        name: "{{ vault_group }}"
+        state: present
+        system: true
+
+    - name: Create Vault system user
+      ansible.builtin.user:
+        name: "{{ vault_user }}"
+        group: "{{ vault_group if not ansible_check_mode else omit }}"
+        system: true
+        shell: /bin/false
+        home: "{{ vault_data_dir }}"
+
+    - name: Create Vault directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ vault_user if not ansible_check_mode else omit }}"
+        group: "{{ vault_group if not ansible_check_mode else omit }}"
+        mode: '0750'
+      loop:
+        - "{{ vault_config_dir }}"
+        - "{{ vault_certs_dir }}"
+        - "{{ vault_data_dir }}"
+
+    - name: Copy Vault TLS certificate
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        src: "{{ vault_local_cert_path }}"
+        dest: "{{ vault_certs_dir }}/tls.crt"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: '0644'
+      notify: Restart Vault
+
+    - name: Copy Vault TLS private key
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        src: "{{ vault_local_key_path }}"
+        dest: "{{ vault_certs_dir }}/tls.key"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: '0600'
+      notify: Restart Vault
+
+    - name: Configure Vault
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        dest: "{{ vault_config_dir }}/vault.hcl"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: '0640'
+        content: |
+          storage "raft" {
+            path    = "{{ vault_data_dir }}"
+            node_id = "{{ inventory_hostname }}"
+          }
+
+          listener "tcp" {
+            address       = "0.0.0.0:{{ vault_port }}"
+            tls_disable   = 0
+            tls_cert_file = "{{ vault_certs_dir }}/tls.crt"
+            tls_key_file  = "{{ vault_certs_dir }}/tls.key"
+          }
+
+          api_addr      = "https://{{ ansible_facts["default_ipv4"]["address"] }}:{{ vault_port }}"
+          cluster_addr  = "https://{{ ansible_facts["default_ipv4"]["address"] }}:8201"
+          ui            = true
+          disable_mlock = true
+      notify: Restart Vault
+
+    - name: Create Vault systemd unit
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/vault.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description="HashiCorp Vault - A tool for managing secrets"
+          Documentation=https://www.vaultproject.io/docs/
+          Requires=network-online.target
+          After=network-online.target
+          ConditionFileNotEmpty={{ vault_config_dir }}/vault.hcl
+
+          [Service]
+          User={{ vault_user }}
+          Group={{ vault_group }}
+          ProtectSystem=full
+          ProtectHome=read-only
+          PrivateTmp=yes
+          PrivateDevices=yes
+          SecureBits=keep-caps
+          AmbientCapabilities=CAP_IPC_LOCK
+          CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+          NoNewPrivileges=yes
+          ExecStart=/usr/bin/vault server -config={{ vault_config_dir }}/vault.hcl
+          ExecReload=/bin/kill --signal HUP $MAINPID
+          KillMode=process
+          KillSignal=SIGINT
+          Restart=on-failure
+          RestartSec=5
+          TimeoutStopSec=30
+          LimitNOFILE=65536
+          LimitMEMLOCK=infinity
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Restart Vault
+
+    - name: Ensure Vault service is enabled and started
+      when: not ansible_check_mode
+      ansible.builtin.systemd:
+        name: vault
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Apply pending Vault service changes
+      when: not ansible_check_mode
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for Vault HTTPS API
+      when: not ansible_check_mode
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ vault_port }}"
+        delay: 2
+        timeout: 30
+
+    - name: Get Vault initialization status
+      when: not ansible_check_mode
+      ansible.builtin.command:
+        cmd: vault status -format=json
+      environment:
+        VAULT_ADDR: "https://127.0.0.1:{{ vault_port }}"
+        VAULT_SKIP_VERIFY: "true"
+      register: vault_status_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Parse Vault status
+      when: not ansible_check_mode
+      ansible.builtin.set_fact:
+        vault_status: "{{ vault_status_raw.stdout | from_json }}"
+
+    - name: Initialize Vault when needed
+      when: not ansible_check_mode and not vault_status.initialized
+      block:
+        - name: Initialize Vault with five key shares and a threshold of three
+          ansible.builtin.command:
+            cmd: vault operator init -key-shares=5 -key-threshold=3 -format=json
+          environment:
+            VAULT_ADDR: "https://127.0.0.1:{{ vault_port }}"
+            VAULT_SKIP_VERIFY: "true"
+          register: vault_init_raw
+          changed_when: true
+          no_log: false
+
+        - name: Store Vault initialization credentials locally
+          ansible.builtin.copy:
+            content: "{{ vault_init_raw.stdout }}"
+            dest: "{{ vault_keys_file }}"
+            mode: '0600'
+          delegate_to: localhost
+          become: false
+          no_log: false
+
+    - name: Unseal Vault
+      when: not ansible_check_mode and (file_exists or not vault_status.initialized)
+      vars:
+        file_exists: "{{ lookup('file', vault_keys_file, errors='ignore') | length > 0 }}"
+      block:
+        - name: Load Vault credentials
+          ansible.builtin.set_fact:
+            vault_creds: "{{ lookup('file', vault_keys_file) | from_json }}"
+          no_log: false
+
+        - name: Unseal Vault with three key shares
+          ansible.builtin.command:
+            cmd: "vault operator unseal {{ item }}"
+          environment:
+            VAULT_ADDR: "https://127.0.0.1:{{ vault_port }}"
+            VAULT_SKIP_VERIFY: "true"
+          loop: "{{ vault_creds.unseal_keys_b64[:3] }}"
+          changed_when: true
+          no_log: false
+
+    - name: Create Terraform admin policy
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        dest: "{{ vault_config_dir }}/terraform-admin-policy.hcl"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: '0640'
+        content: |
+          # Full access to manage mounts, policies, and authentication methods.
+          path "sys/*" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+          # Full access to secrets in secret/*.
+          path "secret/*" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+          # Access to manage authentication methods and roles.
+          path "auth/*" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+          # Access to manage external identity groups and aliases.
+          path "identity/*" {
+            capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+          }
+
+    - name: Upload Terraform admin policy to Vault
+      when: not ansible_check_mode
+      ansible.builtin.command:
+        cmd: vault policy write terraform-admin {{ vault_config_dir }}/terraform-admin-policy.hcl
+      environment:
+        VAULT_ADDR: "https://127.0.0.1:{{ vault_port }}"
+        VAULT_SKIP_VERIFY: "true"
+        VAULT_TOKEN: "{{ vault_creds.root_token }}"
+      changed_when: true
+      no_log: false
+
+    - name: Create renewable Terraform token
+      when: not ansible_check_mode
+      ansible.builtin.command:
+        cmd: vault token create -policy=terraform-admin -period=720h -format=json
+      environment:
+        VAULT_ADDR: "https://127.0.0.1:{{ vault_port }}"
+        VAULT_SKIP_VERIFY: "true"
+        VAULT_TOKEN: "{{ vault_creds.root_token }}"
+      register: terraform_token_raw
+      changed_when: true
+      no_log: false
+
+    - name: Store Terraform token locally
+      when: not ansible_check_mode
+      ansible.builtin.copy:
+        content: "{{ (terraform_token_raw.stdout | from_json).auth.client_token }}"
+        dest: "{{ vault_terraform_token_file }}"
+        mode: '0600'
+      delegate_to: localhost
+      become: false
+      no_log: false
+
+    - name: Create local Vault backup staging directory
+      when: vault_backup_enabled | bool
+      ansible.builtin.file:
+        path: "{{ vault_backup_local_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Install restricted Vault backup token
+      when: vault_backup_enabled | bool and not ansible_check_mode
+      ansible.builtin.copy:
+        src: "{{ vault_backup_token_local_path }}"
+        dest: "{{ vault_backup_token_path }}"
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Install OCI Object Storage pre-authenticated request URL
+      when: vault_backup_enabled | bool and not ansible_check_mode
+      ansible.builtin.copy:
+        src: "{{ vault_backup_oci_par_url_local_path }}"
+        dest: "{{ vault_backup_oci_par_url_path }}"
+        owner: root
+        group: root
+        mode: '0600'
+
+    # Required PAR over bucket (OCI):
+    # Access type: Any Object Write
+    # Prefix: vault/
+
+    - name: Install Vault OCI backup script
+      when: vault_backup_enabled | bool and not ansible_check_mode
+      ansible.builtin.template:
+        src: resources/vault/vault-oci-backup.sh.j2
+        dest: "{{ vault_backup_script_path }}"
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Schedule daily Vault backup to OCI Object Storage
+      when: vault_backup_enabled | bool and not ansible_check_mode
+      ansible.builtin.cron:
+        name: "Vault Raft snapshot upload to OCI Object Storage"
+        cron_file: vault-oci-backup
+        user: root
+        minute: "{{ vault_backup_schedule_minute }}"
+        hour: "{{ vault_backup_schedule_hour }}"
+        job: "{{ vault_backup_script_path }} >/dev/null 2>&1"
