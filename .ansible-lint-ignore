@@ -1,5 +1,8 @@
 roles/vm_configuration/tasks/04-configure-sshd.yml var-naming[no-role-prefix]
 provision-node-exporter.yml syntax-check[specific]
 configure-proxmox-cluster.yml syntax-check[unknown-module]
+# Exceptions for CI
 roles/vm_configuration/tasks/00-pre-tasks.yml var-naming[no-role-prefix]
 roles/vm_vault_authentication/tasks/01-vault-authentication.yml var-naming[no-role-prefix]
+roles/bash_customization/tests/test.yml role-name[path]
+roles/vm_configuration/tests/test.yml role-name[path]

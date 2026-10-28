@@ -4,8 +4,9 @@
   # Force linear strategy to make playbook more stable
   strategy: linear
   connection: local
+  gather_facts: false
   become: true
   # Unable to test ssh-hardening inside container
   # run role with following flag: --skip-tags vmc.configure-sshd
   roles:
-    - vm_configuration
+    - ../../vm_configuration
