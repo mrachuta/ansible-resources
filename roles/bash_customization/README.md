@@ -36,6 +36,12 @@ Type: string
 
 Description: additional bash aliases to be added to configuration file for user that configuration is provisioned for
 
+`bash_customization_use_vault`
+
+Type: boolean
+
+Description: when true, use the `vm_vault_authentication` role to retrieve SSH credentials from `secret/infra/ansible`; when false, use connection settings from inventory, including in offline mode
+
 ### Other variables:
 
 * see *vars/main.yml* file.
@@ -43,6 +49,9 @@ Description: additional bash aliases to be added to configuration file for user 
 ## Dependencies
 
 `bash_customization_remote_user` should be able to perfom commands with root privileges.
+
+When `bash_customization_use_vault` is true, the `community.hashi_vault`
+collection and the existing AppRole environment configuration are required.
 
 ## Additional information
 

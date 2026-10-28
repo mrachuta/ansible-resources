@@ -1,13 +1,10 @@
 ---
-- name: "[06.01] Generate color for machine name"
-  when: bash_customization_bash_hostname_color is not defined or bash_customization_bash_hostname_color | length == 0
-  ansible.builtin.shell: "echo $(( RANDOM % 229 ))"
-  args:
-    executable: /bin/bash
-  register: bash_customization_generated_bash_hostname_color
-  changed_when: false
+- name: "[06.01] Generate stable color for machine name"
+  when: bash_customization_bash_hostname_color | default('', true) | length == 0
+  ansible.builtin.set_fact:
+    bash_customization_generated_bash_hostname_color: >-
+      {{ (inventory_hostname | hash('sha1') | int(base=16)) % 229 }}
   tags:
-    - always
     - bac.configure-bashrc
     - bac.06.01
 
@@ -19,6 +16,5 @@
     group: "{{ bash_customization_default_group }}"
     mode: "0640"
   tags:
-    - always
     - bac.configure-bashrc
     - bac.06.02
