@@ -1,15 +1,36 @@
+---
 - name: "Run role vm_configuration"
   hosts: "{{ target_hosts | default('all') }}"
   become: true
+  gather_facts: false
   roles:
-      - role: vm_configuration
+    - vm_configuration
 
 # Example run:
-# ansible-playbook -i inventory/default.yml configure-vm.yml \
+# ansible-playbook -i inventory/default.yml \
 # -e "target_hosts=myhosts" --skip-tags vmc.setup-accounts-and-privileges \
-# --skip-tags vmc.configure-security --skip-tags vmc.configure-sshd
+# --skip-tags vmc.configure-security --skip-tags vmc.configure-sshd \
+# configure-vm.yml
+#
+# First configuration of dynamically discovered VM(s), using the one-time
+# default account written by Terraform to Vault:
+# ansible-playbook -i inventory/default.yml -i inventory/proxmox.proxmox.yml \
+# -e "target_hosts=capmox" -e "vm_configuration_use_vault=true" \
+# -e "vm_configuration_use_vault_default_user=true" configure-vm.yml
+#
+# Subsequent runs with the technical user credentials stored in infra/ansible:
+# ansible-playbook -i inventory/default.yml -i inventory/proxmox.proxmox.yml \
+# -e "target_hosts=capmox" -e "vm_configuration_use_vault=true" \
+# -e "vm_configuration_use_vault_default_user=false" configure-vm.yml
+#
+# Example run to create users only:
+# ansible-playbook -i inventory/default.yml \
+# -e "target_hosts=proxmox_nodes" --skip-tags vmc.initial-setup \
+# --skip-tags vmc.configure-sshd \
+# configure-vm.yml
 #
 # Example run against localhost:
-# ansible-playbook configure-vm.yml \
-# -e "target_hosts=localhost" \
-# --connection=local --skip-tags="vmc.configure-sshd"
+# ansible-playbook -i inventory/default.yml \
+# -e "target_hosts=wsl" --connection=local --skip-tags="vmc.setup-accounts-and-privileges" \
+# --skip-tags="vmc.configure-security" --skip-tags="vmc.configure-sshd" --diff \
+# configure-vm.yml

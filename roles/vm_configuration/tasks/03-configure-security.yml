@@ -2,11 +2,17 @@
 - name: "[03.01] Populate service facts"
   ansible.builtin.service_facts:
   tags:
-    - always
     - vmc.configure-security
     - vmc.03.01
 
-- name: "[03.02] Set passwordless sudo"
+- name: "[03.02] Get existing groups"
+  ansible.builtin.getent:
+    database: group
+  tags:
+    - vmc.configure-security
+    - vmc.03.02
+
+- name: "[03.03] Set passwordless sudo"
   when: vm_configuration_passwordless_sudo | bool
   ansible.builtin.template:
     src: "templates/010-passwordless-sudo.j2"
@@ -14,13 +20,12 @@
     validate: "/usr/sbin/visudo -cf %s"
     mode: "0600"
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.02
+    - vmc.03.03
 
-- name: "[03.03] Set permissive mode on SELinux"
+- name: "[03.04] Set permissive mode on SELinux"
   # Alias for fact
-  when: vm_configuration_set_selinux_permissive | bool and ansible_os_family == 'RedHat'
+  when: vm_configuration_set_selinux_permissive | bool and ansible_facts["os_family"] == 'RedHat'
   # Shell used to mitigate risk with missing python's libselinux module
   ansible.builtin.shell:
     cmd: |
@@ -34,46 +39,41 @@
   changed_when: vm_configuration_selinux_script.rc == 0
   failed_when: vm_configuration_selinux_script.rc not in [0,2]
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.03
+    - vmc.03.04
 
-- name: "[03.04] Enable ufw"
-  # Alias for fact
-  when: "(not vm_configuration_disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
+- name: "[03.05] Enable ufw"
+  when: "(not vm_configuration_disable_system_firewall | bool) and (ansible_facts[\"services\"] is defined) and ('ufw.service' in ansible_facts[\"services\"])"
   ansible.builtin.systemd:
     name: ufw
     state: started
     enabled: true
     masked: false
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.04
+    - vmc.03.05
 
-- name: "[03.05] Set deny policy on ufw (incoming)"
+- name: "[03.06] Set deny policy on ufw (incoming)"
   when: not vm_configuration_disable_system_firewall | bool
   community.general.ufw:
     state: enabled
     policy: deny
     direction: incoming
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.05
+    - vmc.03.06
 
-- name: "[03.06] Set allow policy on ufw (outgoing)"
+- name: "[03.07] Set allow policy on ufw (outgoing)"
   when: not vm_configuration_disable_system_firewall | bool
   community.general.ufw:
     state: enabled
     policy: allow
     direction: outgoing
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.06
+    - vmc.03.07
 
-- name: "[03.07] Add ufw rules"
+- name: "[03.08] Add ufw rules"
   when: not vm_configuration_disable_system_firewall | bool
   community.general.ufw:
     comment: "{{ item.comment }}"
@@ -82,15 +82,13 @@
     proto: "{{ item.proto }}"
     rule: "{{ item.rule }}"
     to_port: "{{ item.to_port }}"
-  loop: "{{ ufw_rules }}"
+  loop: "{{ vm_configuration_ufw_rules }}"
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.07
+    - vmc.03.08
 
-- name: "[03.08] Disable ufw"
-  # Alias for fact
-  when: "(vm_configuration_disable_system_firewall | bool) and (services is defined) and ('ufw.service' in services)"
+- name: "[03.09] Disable ufw"
+  when: "(vm_configuration_disable_system_firewall | bool) and (ansible_facts[\"services\"] is defined) and ('ufw.service' in ansible_facts[\"services\"])"
   ansible.builtin.systemd:
     name: ufw
     state: stopped
@@ -98,13 +96,11 @@
     enabled: false
     daemon_reload: true
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.08
+    - vmc.03.09
 
-- name: "[03.09] Disable firewalld"
-  # Alias for fact
-  when: "(vm_configuration_disable_system_firewall | bool) and (services is defined) and ('firewalld.service' in services)"
+- name: "[03.10] Disable firewalld"
+  when: "(vm_configuration_disable_system_firewall | bool) and (ansible_facts[\"services\"] is defined) and ('firewalld.service' in ansible_facts[\"services\"])"
   ansible.builtin.systemd:
     name: firewalld
     state: stopped
@@ -112,6 +108,5 @@
     enabled: false
     daemon_reload: true
   tags:
-    - always
     - vmc.configure-security
-    - vmc.03.09
+    - vmc.03.10

@@ -52,10 +52,10 @@ vm_configuration_packages_to_install:
     - "dnsutils"
 vm_configuration_repo_list:
   - name: "kubernetes"
-    apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
-    apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key"
-    yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.33/rpm/"
-    yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.33/rpm/repodata/repomd.xml.key"
+    apt_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.36/deb/ /"
+    apt_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key"
+    yum_repo_url: "https://pkgs.k8s.io/core:/stable:/v1.36/rpm/"
+    yum_gpg_url: "https://pkgs.k8s.io/core:/stable:/v1.36/rpm/repodata/repomd.xml.key"
     yum_excludes: '"kubelet kubeadm cri-tools kubernetes-cni"'
   - name: "vscode"
     apt_repo_url: "https://packages.microsoft.com/repos/code stable main"
@@ -63,8 +63,8 @@ vm_configuration_repo_list:
     yum_repo_url: "https://packages.microsoft.com/yumrepos/vscode"
     yum_gpg_url: "https://packages.microsoft.com/keys/microsoft.asc"
     yum_excludes: '""'
-  - name: "hasihcorp"
-    apt_repo_url: "https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+  - name: "hashicorp"
+    apt_repo_url: "https://apt.releases.hashicorp.com {{ ansible_facts[\"distribution_release\"] | default(\"stable\") }} main"
     apt_gpg_url: "https://apt.releases.hashicorp.com/gpg"
     yum_repo_url: "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"
     yum_gpg_url: "https://rpm.releases.hashicorp.com/gpg"

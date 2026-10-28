@@ -1,7 +1,12 @@
 ---
-- name: "Include all role tasks"
+- name: "Include connection preparation tasks"
+  ansible.builtin.include_tasks: 00-pre-tasks.yml
+  tags:
+    - always
+
+- name: "Include VM configuration tasks"
   ansible.builtin.include_tasks: "{{ task_file }}"
-  with_items: "{{ lookup('fileglob', role_path + '/tasks/*-*.yml', wantlist=true) | sort }}"
+  with_items: "{{ lookup('fileglob', role_path + '/tasks/0[1-4]-*.yml', wantlist=true) | sort }}"
   loop_control:
     loop_var: task_file
   tags:

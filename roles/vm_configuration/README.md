@@ -57,7 +57,14 @@ Description: Full path to public ssh key to be added to your user account
 `vm_configuration_default_user_password_download_path`
 
 Type: string
-Description: Full path to save your password on local machine
+
+Description: Full path to save the generated password locally when `vm_configuration_use_vault` is false
+
+`vm_configuration_use_vault`
+
+Type: boolean
+
+Description: When true, save newly generated default-user credentials in `secret/resources/<environment>/vm/<vm-name>` under `default_user_username` and `default_user_password`; when false, save the password locally
 
 `vm_configuration_add_default_user_to_sudo`
 
@@ -108,6 +115,7 @@ Description: Rules to be added to ufw; see *defaults/main.yml* for more details
 Role requires following collections to be installed before launching the role:
   - *community.general*
   - *ansible.posix*
+  - *community.hashi_vault*
   - *devsec.hardening*
 
 ## Additional information

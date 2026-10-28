@@ -1,0 +1,120 @@
+---
+- name: "[00.01] Validate Vault connection mode"
+  when: vm_configuration_use_vault_default_user | bool
+  delegate_to: localhost
+  run_once: true
+  become: false
+  ansible.builtin.assert:
+    that:
+      - vm_configuration_use_vault | bool
+    fail_msg: >-
+      vm_configuration_use_vault_default_user=true requires
+      vm_configuration_use_vault=true.
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.01
+
+- name: "[00.02] Use bootstrap credentials from Vault for the initial connection"
+  when:
+    - vm_configuration_use_vault | bool
+    - vm_configuration_use_vault_default_user | bool
+  delegate_to: localhost
+  become: false
+  ansible.builtin.set_fact:
+    ansible_user: >-
+      {{ vm_configuration_bootstrap_credentials.get(
+        'initial_user_username',
+        vm_configuration_bootstrap_credentials.get('default_username')
+      ) }}
+    ansible_password: >-
+      {{ vm_configuration_bootstrap_credentials.get(
+        'initial_user_password',
+        vm_configuration_bootstrap_credentials.get('default_username_password')
+      ) }}
+    ansible_become_password: >-
+      {{ vm_configuration_bootstrap_credentials.get(
+        'initial_user_password',
+        vm_configuration_bootstrap_credentials.get('default_username_password')
+      ) }}
+    # Trust a previously unseen key once, but reject any later change.
+    # The accepted key is saved in the controller user's ~/.ssh/known_hosts.
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"
+  vars:
+    vm_configuration_bootstrap_credentials: >-
+      {{ lookup(
+        'community.hashi_vault.vault_kv2_get',
+        'resources/' ~ inventory_hostname.split('-')[1] ~ '/vm/' ~ inventory_hostname,
+        engine_mount_point='secret'
+      ).secret }}
+  no_log: true
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.02
+
+- name: "[00.04] Read managed Ansible credentials from Vault"
+  when:
+    - vm_configuration_use_vault | bool
+    - not (vm_configuration_use_vault_default_user | bool)
+  delegate_to: localhost
+  delegate_facts: true
+  run_once: true
+  become: false
+  ansible.builtin.set_fact:
+    vm_configuration_ansible_vault_credentials: >-
+      {{ lookup(
+        'community.hashi_vault.vault_kv2_get',
+        'infra/ansible',
+        engine_mount_point='secret'
+      ).secret }}
+  no_log: true
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.04
+
+- name: "[00.05] Use managed Ansible credentials for the connection"
+  when:
+    - vm_configuration_use_vault | bool
+    - not (vm_configuration_use_vault_default_user | bool)
+  delegate_to: localhost
+  become: false
+  ansible.builtin.set_fact:
+    ansible_user: "{{ hostvars['localhost'].vm_configuration_ansible_vault_credentials.ansible_username }}"
+    # ssh_agent=auto stores this key only in an ephemeral agent.
+    # trim plus the explicit newline also accepts keys written to
+    # Vault through shell command substitution.
+    ansible_ssh_private_key: >-
+      {{ hostvars['localhost'].vm_configuration_ansible_vault_credentials.ansible_ssh_private_key | trim }}{{ '\n' }}
+    ansible_password: null
+    ansible_become_password: null
+  no_log: true
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.05
+
+- name: "[00.06] Gather facts after configuring the connection"
+  ansible.builtin.setup:
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.06
+
+- name: "[00.07] Register RHEL system with Red Hat Subscription Management"
+  when:
+    - ansible_facts["distribution"] == "RedHat"
+    - vm_configuration_use_vault | bool
+    - not ansible_check_mode
+  community.general.redhat_subscription:
+    state: present
+    username: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_username }}"
+    password: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_password }}"
+    auto_attach: true
+  vars:
+    vm_configuration_rhel_registration_credentials: >-
+      {{ lookup(
+        'community.hashi_vault.vault_kv2_get',
+        'infra/ansible',
+        engine_mount_point='secret'
+      ).secret }}
+  no_log: true
+  tags:
+    - vmc.pre-tasks
+    - vmc.00.07

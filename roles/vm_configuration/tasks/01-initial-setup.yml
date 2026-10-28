@@ -1,45 +1,41 @@
 ---
 - name: "Enable EPEL repo"
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts["os_family"] == 'RedHat'
   block:
     - name: "[01.01] Enable EPEL repo - CentOS/RHEL"
-      when: ansible_distribution == 'CentOS'
+      when: ansible_facts["distribution"] == 'CentOS'
       ansible.builtin.dnf:
         name: epel-release
         state: present
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.01
 
     - name: "[01.02] Add EPEL repo key - RHEL"
-      when: ansible_distribution == 'RedHat'
+      when: ansible_facts["distribution"] == 'RedHat'
       ansible.builtin.rpm_key:
         state: present
-        key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}"
+        key: "https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-{{ ansible_facts[\"distribution_major_version\"] }}"
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.02
 
     - name: "[01.03] Enable EPEL repo - RHEL"
-      when: ansible_distribution == 'RedHat'
+      when: ansible_facts["distribution"] == 'RedHat'
       ansible.builtin.dnf:
-        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts[\"distribution_major_version\"] }}.noarch.rpm"
         state: present
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.03
 
     - name: "[01.04] Enable EPEL repo - OracleLinux"
-      when: ansible_distribution == 'OracleLinux'
+      when: ansible_facts["distribution"] == 'OracleLinux'
       ansible.builtin.lineinfile:
-        path: "/etc/yum.repos.d/oracle-epel-ol{{ ansible_distribution_major_version }}.repo"
+        path: "/etc/yum.repos.d/oracle-epel-ol{{ ansible_facts[\"distribution_major_version\"] }}.repo"
         regexp: "^enabled=0$"
         line: enabled=1
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.04
 
@@ -47,18 +43,17 @@
   block:
     - name: "[01.05] Install python3-debian package"
       # Apt instead of ansible.builtin.package to refresh cache
-      when: ansible_os_family == 'Debian'
+      when: ansible_facts["os_family"] == 'Debian'
       ansible.builtin.apt:
         name: python3-debian
         state: present
         update_cache: true
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.05
 
     - name: "[01.06] Add external repos - add apt repo"
-      when: ansible_os_family == 'Debian' and item.apt_repo_url | length > 0
+      when: ansible_facts["os_family"] == 'Debian' and item.apt_repo_url | length > 0
       ansible.builtin.deb822_repository:
         name: "{{ item.name }}"
         enabled: "yes"
@@ -66,25 +61,23 @@
         uris: "{{ item.apt_repo_url.split(' ')[0] }}"
         suites: "{{ item.apt_repo_url.split(' ')[1] }}"
         components: "{{ item.apt_repo_url.split(' ')[2:] | join(' ') }}"
-        architectures: "{{ vm_configuration_architecture_map[ansible_architecture] }}"
+        architectures: "{{ vm_configuration_architecture_map[ansible_facts[\"architecture\"]] }}"
         signed_by: "{{ item.apt_gpg_url }}"
       loop: "{{ vm_configuration_repo_list }}"
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.06
 
     - name: "[01.07] Run apt update"
-      when: ansible_os_family == 'Debian'
+      when: ansible_facts["os_family"] == 'Debian'
       ansible.builtin.apt:
         update_cache: true
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.07
 
     - name: "[01.08] Add external repos - add yum repo"
-      when: ansible_os_family == 'RedHat' and item.yum_repo_url | length > 0
+      when: ansible_facts["os_family"] == 'RedHat' and item.yum_repo_url | length > 0
       ansible.builtin.yum_repository:
         name: "{{ item.name }}"
         description: "{{ item.name }} repository"
@@ -96,38 +89,31 @@
         exclude: "{{ item.yum_excludes }}"
       loop: "{{ vm_configuration_repo_list }}"
       tags:
-        - always
         - vmc.initial-setup
         - vmc.01.08
 
 - name: "[01.09] Install required packages - common"
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ vm_configuration_packages_to_install.common }}"
     state: present
-  loop: "{{ vm_configuration_packages_to_install.common }}"
   tags:
-    - always
     - vmc.initial-setup
     - vmc.01.09
 
 - name: "[01.10] Install required packages - RHEL family"
-  when: ansible_os_family == 'RedHat'
+  when: ansible_facts["os_family"] == 'RedHat'
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ vm_configuration_packages_to_install.redhat }}"
     state: present
-  loop: "{{ vm_configuration_packages_to_install.redhat }}"
   tags:
-    - always
     - vmc.initial-setup
     - vmc.01.10
 
 - name: "[01.11] Install required packages - Debian family"
-  when: ansible_os_family == 'Debian'
+  when: ansible_facts["os_family"] == 'Debian'
   ansible.builtin.package:
-    name: "{{ item }}"
+    name: "{{ vm_configuration_packages_to_install.debian }}"
     state: present
-  loop: "{{ vm_configuration_packages_to_install.debian }}"
   tags:
-    - always
     - vmc.initial-setup
     - vmc.01.11
