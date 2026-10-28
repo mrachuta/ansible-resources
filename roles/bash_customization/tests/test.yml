@@ -12,4 +12,4 @@
         state: present
 
   roles:
-    - ../../bash_customization
+    - bash_customization

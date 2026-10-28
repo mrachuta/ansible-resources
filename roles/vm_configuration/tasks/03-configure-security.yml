@@ -100,7 +100,10 @@
     - vmc.03.09
 
 - name: "[03.10] Disable firewalld"
-  when: "(vm_configuration_disable_system_firewall | bool) and (ansible_facts[\"services\"] is defined) and ('firewalld.service' in ansible_facts[\"services\"])"
+  when: >-
+    (vm_configuration_disable_system_firewall | bool) and
+    (ansible_facts["services"] is defined) and
+    ('firewalld.service' in ansible_facts["services"])
   ansible.builtin.systemd:
     name: firewalld
     state: stopped
