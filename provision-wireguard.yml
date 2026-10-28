@@ -2,12 +2,7 @@
 - name: Install and configure WireGuard
   hosts: "{{ target_hosts | default('wireguard') }}"
   become: true
-  gather_facts: true
-
-  pre_tasks:
-    - name: Skip host if OS is unsupported
-      when: ansible_distribution not in ['Ubuntu', 'Debian']
-      ansible.builtin.meta: end_host
+  gather_facts: false
 
   handlers:
     - name: Restart WireGuard
@@ -19,6 +14,27 @@
       ansible.builtin.command:
         cmd: sysctl --system
       changed_when: false
+
+  pre_tasks:
+    - name: "Configure Vault authentication"
+      when: ansible_use_vault_for_authentication | default(false) | bool
+      ansible.builtin.include_role:
+        name: vm_vault_authentication
+      vars:
+        vm_vault_authentication_vault_secret_path: "infra/ansible"
+
+    - name: Read WireGuard configuration from Vault
+      ansible.builtin.set_fact:
+        wireguard_vault_secret: >-
+          {{ lookup(
+            'community.hashi_vault.vault_kv2_get',
+            'infra/wireguard',
+            engine_mount_point='secret'
+          ).secret }}
+        cacheable: false
+      delegate_to: localhost
+      become: false
+      no_log: true
 
   tasks:
     - name: Install WireGuard and dependencies
@@ -37,23 +53,24 @@
         state: directory
         owner: root
         group: root
-        mode: '0600'
+        mode: '0700'
 
-    - name: Deploy WireGuard params file
+    # This file is required by wireguard-install.sh as configuration source.
+    - name: Deploy WireGuard helper configuration from Vault
       ansible.builtin.template:
-        src: resources/wireguard/{{ inventory_hostname }}/params.j2
+        src: resources/wireguard/params.j2
         dest: /etc/wireguard/params
         owner: root
         group: root
-        mode: '0644'
+        mode: '0600'
 
-    - name: Deploy WireGuard configuration file
+    - name: Deploy WireGuard interface configuration from Vault
       ansible.builtin.template:
-        src: resources/wireguard/{{ inventory_hostname }}/wg0.conf.j2
+        src: resources/wireguard/wg0.conf.j2
         dest: /etc/wireguard/wg0.conf
         owner: root
         group: root
-        mode: '0644'
+        mode: '0600'
       notify: Restart WireGuard
 
     - name: Enable IP forwarding for WireGuard
@@ -85,7 +102,7 @@
       ansible.builtin.get_url:
         # No versioning
         url: https://raw.githubusercontent.com/angristan/wireguard-install/refs/heads/master/wireguard-install.sh
-        dest: /opt/wireguard/wireguard-install.sh # Corrected destination path to be a file inside the directory.
+        dest: /opt/wireguard/wireguard-install.sh
         mode: '0700'
         owner: root
         group: root
