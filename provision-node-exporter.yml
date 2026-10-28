@@ -1,7 +1,15 @@
 - name: Provision node-exporter
   hosts: "{{ target_hosts | default('remote') }}"
   become: true
+  gather_facts: "{{ not (ansible_use_vault_for_authentication | default(false) | bool) }}"
   pre_tasks:
+    - name: "Configure Vault authentication"
+      when: ansible_use_vault_for_authentication | default(false) | bool
+      ansible.builtin.include_role:
+        name: vm_vault_authentication
+      vars:
+        vm_vault_authentication_vault_secret_path: "infra/ansible"
+
     - name: "Gather system user and group facts"
       ansible.builtin.getent:
         database: "{{ item }}"
@@ -10,7 +18,7 @@
         - group
 
     - name: "Create system group node-exp"
-      when: "'node-exp' not in ansible_facts.getent_group"
+      when: "'node-exp' not in (ansible_facts[\"getent_group\"] | default({}))"
       ansible.builtin.group:
         name: "node-exp"
         system: true
@@ -18,7 +26,7 @@
       become: true
 
     - name: "Create system user node-exp"
-      when: "'node-exp' not in ansible_facts.getent_passwd"
+      when: "'node-exp' not in (ansible_facts[\"getent_passwd\"] | default({}))"
       ansible.builtin.user:
         name: "node-exp"
         system: true
@@ -48,7 +56,7 @@
     - name: Copy certs
       when: "'kubernetes' not in group_names"
       ansible.builtin.copy:
-        src: "resources/node_exporter/{{ item }}"
+        src: "secrets/static/node_exporter/{{ item }}"
         dest: "/etc/node_exporter/{{ item | basename }}"
         owner: node-exp
         group: node-exp
@@ -64,8 +72,8 @@
 
   tasks:
     - name: Copy script to generate node_os_updates metrics to remote
-      ansible.builtin.copy:
-        src: files/node_os_updates_metrics.sh
+      ansible.builtin.template:
+        src: resources/node_exporter/node_os_updates_metrics.sh.j2
         dest: /var/lib/node_exporter/node_os_updates_metrics.sh
         owner: node-exp
         group: node-exp
