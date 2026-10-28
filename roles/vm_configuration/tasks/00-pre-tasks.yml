@@ -97,24 +97,33 @@
     - vmc.pre-tasks
     - vmc.00.06
 
-- name: "[00.07] Register RHEL system with Red Hat Subscription Management"
+- name: "Configure RHEL subscription"
   when:
     - ansible_facts["distribution"] == "RedHat"
     - vm_configuration_use_vault | bool
     - not ansible_check_mode
-  community.general.redhat_subscription:
-    state: present
-    username: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_username }}"
-    password: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_password }}"
-    auto_attach: true
-  vars:
-    vm_configuration_rhel_registration_credentials: >-
-      {{ lookup(
-        'community.hashi_vault.vault_kv2_get',
-        'infra/ansible',
-        engine_mount_point='secret'
-      ).secret }}
   no_log: true
-  tags:
-    - vmc.pre-tasks
-    - vmc.00.07
+  block:
+    - name: "[00.07] Read RHEL registration credentials from Vault"
+      delegate_to: localhost
+      become: false
+      ansible.builtin.set_fact:
+        vm_configuration_rhel_registration_credentials: >-
+          {{ lookup(
+            'community.hashi_vault.vault_kv2_get',
+            'infra/ansible',
+            engine_mount_point='secret'
+          ).secret }}
+      tags:
+        - vmc.pre-tasks
+        - vmc.00.07
+
+    - name: "[00.08] Register RHEL system with Red Hat Subscription Management"
+      community.general.redhat_subscription:
+        state: present
+        username: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_username }}"
+        password: "{{ vm_configuration_rhel_registration_credentials.rhel_registration_password }}"
+        auto_attach: true
+      tags:
+        - vmc.pre-tasks
+        - vmc.00.08
