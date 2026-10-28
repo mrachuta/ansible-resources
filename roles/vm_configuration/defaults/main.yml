@@ -1,4 +1,6 @@
 ---
+vm_configuration_use_vault: true
+vm_configuration_use_vault_default_user: false
 vm_configuration_remove_root_password: false
 vm_configuration_create_technical_user: true
 vm_configuration_create_default_user: true
@@ -12,7 +14,9 @@ vm_configuration_add_default_user_ssh_key: true
 # Set to null to skip adding key
 vm_configuration_default_user_ssh_keys_paths:
   - "files/testuser_at_example_com.pub"
-vm_configuration_default_user_password_download_path: "./{{ vm_configuration_default_user }}_{{ ansible_hostname }}_password"
+vm_configuration_local_secrets_dir: "~/secrets/created/{{ inventory_hostname }}"
+vm_configuration_default_user_password_download_path: >-
+  {{ vm_configuration_local_secrets_dir }}/user__{{ vm_configuration_default_user }}__password
 vm_configuration_add_default_user_to_sudo: true
 vm_configuration_passwordless_sudo: true
 vm_configuration_set_selinux_permissive: true
