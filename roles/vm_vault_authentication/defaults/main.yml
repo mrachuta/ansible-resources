@@ -1,0 +1,7 @@
+---
+# The role has no effect until both values below are set by its caller.
+vm_vault_authentication_use_vault: true
+vm_vault_authentication_vault_secret_path: my/secrets/path
+
+vm_vault_authentication_username_key: "ansible_username"
+vm_vault_authentication_ssh_private_key_key: "ansible_ssh_private_key"
