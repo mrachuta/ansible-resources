@@ -4,6 +4,7 @@
 /secrets
 /group_vars
 /host_vars
+/docs
 .ansible.cfg
 HINTS.md
 .env
