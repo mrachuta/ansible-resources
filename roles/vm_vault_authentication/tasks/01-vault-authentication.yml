@@ -1,0 +1,41 @@
+---
+- name: "[01.01] Read managed Ansible credentials from Vault"
+  delegate_to: localhost
+  delegate_facts: true
+  run_once: true
+  become: false
+  ansible.builtin.set_fact:
+    vm_vault_authentication_credentials: >-
+      {{ lookup(
+        'community.hashi_vault.vault_kv2_get',
+        vm_vault_authentication_vault_secret_path,
+        engine_mount_point='secret'
+      ).secret }}
+  no_log: true
+  tags:
+    - vmva.authentication
+    - vmva.01.01
+
+- name: "[01.02] Use Vault credentials for the connection"
+  delegate_to: localhost
+  become: false
+  ansible.builtin.set_fact:
+    ansible_user: >-
+      {{ hostvars['localhost'].vm_vault_authentication_credentials[vm_vault_authentication_username_key] }}
+    # ssh_agent=auto stores this key only in an ephemeral agent.
+    # trim plus the explicit newline also accepts keys written to
+    # Vault through shell command substitution.
+    ansible_ssh_private_key: >-
+      {{ hostvars['localhost'].vm_vault_authentication_credentials[vm_vault_authentication_ssh_private_key_key] | trim }}{{ '\n' }}
+    ansible_password: null
+    ansible_become_password: null
+  no_log: true
+  tags:
+    - vmva.authentication
+    - vmva.01.02
+
+- name: "[01.03] Gather facts after configuring the connection"
+  ansible.builtin.setup:
+  tags:
+    - vmva.authentication
+    - vmva.01.03

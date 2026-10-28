@@ -1,0 +1,8 @@
+---
+- name: "Include Vault authentication tasks"
+  when:
+    - vm_vault_authentication_use_vault | bool
+    - vm_vault_authentication_vault_secret_path | default('', true) | length > 0
+  ansible.builtin.include_tasks: 01-vault-authentication.yml
+  tags:
+    - always

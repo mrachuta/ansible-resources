@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  role_name: vm_vault_authentication
+  namespace: mrachuta
+  author: "Mateusz Rachuta"
+  description: "Role to configure VM SSH authentication from Vault"
+  company: ""
+
+  license: "Apache-2.0"
+
+  min_ansible_version: "2.11"
+
+  platforms:
+    - name: "Ubuntu"
+      versions:
+        - "jammy"
+        - "focal"
+    - name: "Debian"
+      versions:
+        - "bullseye"
+    - name: "EL"
+      versions:
+        - "8"
+
+  galaxy_tags: []
+
+dependencies: []
