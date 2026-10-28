@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# {{ ansible_managed }}
+
+set -euo pipefail
+
+umask 077
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+export VAULT_ADDR="https://127.0.0.1:{{ vault_port }}"
+export VAULT_SKIP_VERIFY="true"
+export VAULT_CLIENT_TIMEOUT="10m"
+export VAULT_TOKEN="$(< {{ vault_backup_token_path }})"
+
+backup_root="{{ vault_backup_local_dir }}"
+par_url="$(tr -d '\r\n' < {{ vault_backup_oci_par_url_path }})"
+timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+object_prefix="{{ inventory_hostname }}"
+snapshot_name="vault-raft-${timestamp}.snap"
+archive_name="vault-raft-${timestamp}.tar.gz"
+checksum_name="${archive_name}.sha256"
+
+exec 9>/run/lock/vault-oci-backup.lock
+flock -n 9 || exit 0
+
+workdir="$(mktemp -d "${backup_root}/.vault-oci-backup.XXXXXX")"
+trap 'rm -rf "${workdir}"' EXIT
+
+snapshot_path="${workdir}/${snapshot_name}"
+archive_path="${workdir}/${archive_name}"
+checksum_path="${workdir}/${checksum_name}"
+
+vault operator raft snapshot save "${snapshot_path}"
+tar --create --gzip --file "${archive_path}" --directory "${workdir}" "${snapshot_name}"
+sha256sum "${archive_path}" > "${checksum_path}"
+
+upload() {
+  local source_path="$1"
+  local object_name="$2"
+
+  curl \
+    --fail \
+    --silent \
+    --show-error \
+    --retry 3 \
+    --retry-all-errors \
+    --connect-timeout 20 \
+    --upload-file "${source_path}" \
+    "${par_url%/}/${object_prefix}/${object_name}"
+}
+
+upload "${archive_path}" "${archive_name}"
+upload "${checksum_path}" "${checksum_name}"
+
+logger -t vault-oci-backup "Backup created successfully and uploaded to OCI: ${object_prefix}/${archive_name}"

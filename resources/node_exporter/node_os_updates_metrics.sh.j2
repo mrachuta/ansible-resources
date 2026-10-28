@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -xeu -o pipefail
+
+# {{ ansible_managed }}
+
+set -euo pipefail
 
 # Set the directory for Prometheus metrics
 METRICS_DIR="/var/lib/node_exporter/textfile_collector"
