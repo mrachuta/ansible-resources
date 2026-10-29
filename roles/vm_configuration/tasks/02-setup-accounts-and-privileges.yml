@@ -172,11 +172,12 @@
         not (vm_configuration_use_vault | bool) and
         not vm_configuration_password_file.stat.exists
       delegate_to: localhost
+      become: false
       ansible.builtin.copy:
         content: "{{ vm_configuration_generated_password }}"
         dest: "{{ vm_configuration_default_user_password_download_path }}"
         mode: "0600"
-      no_log: true
+      no_log: false
       tags:
         - vmc.setup-accounts-and-privileges
         - vmc.02.17
