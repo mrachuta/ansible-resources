@@ -172,6 +172,7 @@
         not (vm_configuration_use_vault | bool) and
         not vm_configuration_password_file.stat.exists
       delegate_to: localhost
+      become: false
       ansible.builtin.copy:
         content: "{{ vm_configuration_generated_password }}"
         dest: "{{ vm_configuration_default_user_password_download_path }}"
