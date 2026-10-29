@@ -4,7 +4,7 @@
   # Force linear strategy to make playbook more stable
   strategy: linear
   connection: local
-  gather_facts: false
+  gather_facts: true
   become: true
   pre_tasks:
     - name: "Create user for test purposes"
